@@ -1,0 +1,113 @@
+@import url('../fonts/lobster.css');
+
+html, body{
+	margin: 0;
+	padding: 0;
+	
+	background-color: #333;
+	
+	min-width: 768px;
+	
+	cursor: url('../img/cur_default_32.png'), default;
+}
+
+a, input, area, button, select, textarea{
+	cursor: url('../img/cur_pointer_32.png'), pointer;
+}
+
+header{
+	width: 100%;
+	height: 6em;
+	
+	border-bottom: 2px solid grey;
+	
+	box-shadow: 0px 3px 10px 0px grey;
+}
+
+.page{
+	display: grid;
+	
+	width: calc(100% - 1em);
+	height: calc(100% - 7em - 2px);
+	
+	margin: 1em 0.5em 0em;
+	/* margin-top: 1em; */
+	/* margin-left: 0.5em; */
+	
+	grid-template-areas: "nav demo conf";
+	grid-auto-columns: 16em 1fr 32em;
+	gap: 1em;
+}
+
+.algo_nav{
+	display: flex;
+	
+	/* width: 30%; */
+	/* max-width: 16em; */
+	
+	flex-direction: column;
+	
+	grid-area: nav;
+}
+
+.algo_nav a{
+	display: flex;
+	
+	height: 2.75em;
+	
+	background: #4d4d4d;
+	border: 1px solid gray;
+	
+	justify-content: center;
+	align-items: center;
+	
+	color: white;
+	font-size: 1.5em;
+	
+	text-decoration: none;
+	user-select: none;
+}
+
+.demo{
+	/* width: 100%; */
+	height: 100%;
+	
+	outline: 1px solid red;
+	
+	grid-area: demo;
+}
+
+.config_box{
+	/* width: 32em; */
+	height: 100%;
+	
+	outline: 1px solid red;
+	
+	grid-area: conf;
+}
+
+.config_box .nya{
+	display: flex;
+	
+	width: calc(100% - 1em);
+	height: 8em;
+	
+	justify-content: center;
+	align-items: center;
+	
+	margin: 0.5em 0.5em 0;
+}
+
+.config_box .nya span{
+	font-family: 'Lobster', cursive;
+	font-size: 5em;
+	
+	color: white;
+}
+
+.config_box .nya img{
+	width: 70%;
+	height: 8em;
+	
+	float: right;
+}
