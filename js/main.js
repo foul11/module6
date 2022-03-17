@@ -15,7 +15,18 @@ document.write('<script async src=\"http://' + (location.host || 'localhost').sp
   \************************************/
 /***/ (() => {
 
-eval("\n\n//# sourceURL=webpack:///./src/Algos/_helpers/Algo.js?");
+eval("class IAlgo{\r\n\tconstructor(){\r\n\t\tthis.onstart = null;\r\n\t\tthis.onend = null;\r\n\t\t\r\n\t\tthis.ondraw = null;\r\n\t}\r\n\t\r\n\t*update(){\r\n\t\tif(this.onstart instanceof Function)\r\n\t\t\tthis.onstart.bind(this)();\r\n\t\t\r\n\t\twhile(true){\r\n\t\t\t/* code... */\r\n\t\t\t\r\n\t\t\tlet ret;\r\n\t\t\t\r\n\t\t\tret = new Matrix(10, 10); /* from Matrix.js */\r\n\t\t\tret = new LinearMatrix(10, { x:0, y:0 }); /* from LinearMatrix.js */\r\n\t\t\t\r\n\t\t\tif(this.ondraw instanceof Function)\r\n\t\t\t\tthis.ondraw.bind(this)(ret /* return val on draw */);\r\n\t\t}\r\n\t\t\r\n\t\tif(this.onend instanceof Function)\r\n\t\t\tthis.onend.bind(this)();\r\n\t}\r\n\t\r\n\t\r\n}\n\n//# sourceURL=webpack:///./src/Algos/_helpers/Algo.js?");
+
+/***/ }),
+
+/***/ "./src/Algos/_helpers/LinearMatrix.js":
+/*!********************************************!*\
+  !*** ./src/Algos/_helpers/LinearMatrix.js ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"LinearMatrix\": () => (/* binding */ LinearMatrix)\n/* harmony export */ });\nclass ILinearMatrix{\r\n\tconstructor(len, fill = 0){\r\n\t\tthis.fill(len, fill);\r\n\t}\r\n\t\r\n\tfill(len, value){\r\n\t\tthis.Matrix = [];\r\n\t\t\r\n\t\tfor(let x = 0; x < len; x++){\r\n\t\t\tthis.Matrix.push(value);\r\n\t\t}\r\n\t}\r\n}\r\n\r\nclass LinearMatrix{};\r\n\r\nLinearMatrix = new Proxy(ILinearMatrix, {\r\n\tconstruct(target, args){\r\n\t\treturn new Proxy(new ILinearMatrix(...args), {\r\n\t\t\tget(target, prop, receiver){\r\n\t\t\t\tif(!isNaN(parseInt(prop)))\r\n\t\t\t\t\treturn Reflect.get(target, 'Matrix', receiver)[prop];\r\n\t\t\t\telse if(prop === 'length')\r\n\t\t\t\t\treturn Reflect.get(target, 'Matrix', receiver).length;\r\n\t\t\t\telse\r\n\t\t\t\t\treturn Reflect.get(target, prop, receiver);\r\n\t\t\t},\r\n\t\t});\r\n\t},\r\n});\n\n//# sourceURL=webpack:///./src/Algos/_helpers/LinearMatrix.js?");
 
 /***/ }),
 
@@ -108,7 +119,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Render_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Render.js */ \"./src/Render.js\");\n/* harmony import */ var _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Algos/_helpers/Matrix.js */ \"./src/Algos/_helpers/Matrix.js\");\n\r\n\r\n\r\n$(function(){\r\n\tlet canvas = $('#canvas_demo_algo');\r\n\tlet ctx = canvas[0].getContext('2d');\r\n\t\r\n\tlet render = new _Render_js__WEBPACK_IMPORTED_MODULE_0__.CanvasRender(ctx);\r\n\trender.hello();\r\n\t\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 10));\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 10).length);\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 20).length);\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 20)[3].length);\r\n});\n\n//# sourceURL=webpack:///./src/main.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Render_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Render.js */ \"./src/Render.js\");\n/* harmony import */ var _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Algos/_helpers/Matrix.js */ \"./src/Algos/_helpers/Matrix.js\");\n\r\n\r\n\r\n$(function(){\r\n\tlet canvas = $('#canvas_demo_algo');\r\n\tlet ctx = canvas[0].getContext('2d');\r\n\t\r\n\tlet render = new _Render_js__WEBPACK_IMPORTED_MODULE_0__.CanvasRender(ctx);\r\n\trender.hello();\r\n});\n\n//# sourceURL=webpack:///./src/main.js?");
 
 /***/ })
 
@@ -177,10 +188,11 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Ren
 /******/ 	__webpack_require__("./src/Algos/ant/main.js");
 /******/ 	__webpack_require__("./src/Algos/a_star/main.js");
 /******/ 	__webpack_require__("./src/Algos/claster/main.js");
-/******/ 	__webpack_require__("./src/Algos/genetics/main.js");
 /******/ 	__webpack_require__("./src/Algos/nn/main.js");
+/******/ 	__webpack_require__("./src/Algos/genetics/main.js");
 /******/ 	__webpack_require__("./src/Algos/tree_solution/main.js");
 /******/ 	__webpack_require__("./src/Algos/_helpers/Algo.js");
+/******/ 	__webpack_require__("./src/Algos/_helpers/LinearMatrix.js");
 /******/ 	var __webpack_exports__ = __webpack_require__("./src/Algos/_helpers/Matrix.js");
 /******/ 	
 /******/ })()
