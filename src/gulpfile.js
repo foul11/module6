@@ -61,12 +61,18 @@ let tasks = {
 			// .pipe(rename({ suffix: '.min' }))
 			// .pipe(gulp.dest('dist/'))
 	},
+	
+	refresh(cb){
+		return gulp.src('../index.html')
+			.pipe(refresh())
+	},
 
 	watch(cb){
 		refresh.listen();
 		
 		gulp.watch(['src/**/*.js'], tasks.build);
 		gulp.watch(['src/less/**/*.less'], tasks.less);
+		gulp.watch(['../index.html'], tasks.refresh);
 	}
 }
 

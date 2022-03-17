@@ -9,6 +9,27 @@ document.write('<script async src=\"http://' + (location.host || 'localhost').sp
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/Algos/_helpers/Algo.js":
+/*!************************************!*\
+  !*** ./src/Algos/_helpers/Algo.js ***!
+  \************************************/
+/***/ (() => {
+
+eval("\n\n//# sourceURL=webpack:///./src/Algos/_helpers/Algo.js?");
+
+/***/ }),
+
+/***/ "./src/Algos/_helpers/Matrix.js":
+/*!**************************************!*\
+  !*** ./src/Algos/_helpers/Matrix.js ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"Matrix\": () => (/* binding */ Matrix)\n/* harmony export */ });\nclass IMatrix{\r\n\tconstructor(width, height, fill = 0){\r\n\t\tthis.fill(width, height, fill);\r\n\t}\r\n\t\r\n\tfill(width, height, value){\r\n\t\tthis.Matrix = [];\r\n\t\t\r\n\t\tfor(let x = 0; x < width; x++){\r\n\t\t\tthis.Matrix.push([])\r\n\t\t\tlet Matrix = this.Matrix[x];\r\n\t\t\t\r\n\t\t\tfor(let y = 0; y < height; y++){\r\n\t\t\t\tMatrix.push(value);\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n}\r\n\r\nclass Matrix{};\r\n\r\nMatrix = new Proxy(IMatrix, {\r\n\tconstruct(target, args){\r\n\t\treturn new Proxy(new IMatrix(...args), {\r\n\t\t\tget(target, prop, receiver){\r\n\t\t\t\tif(!isNaN(parseInt(prop)))\r\n\t\t\t\t\treturn Reflect.get(target, 'Matrix', receiver)[prop];\r\n\t\t\t\telse if(prop === 'length')\r\n\t\t\t\t\treturn Reflect.get(target, 'Matrix', receiver).length;\r\n\t\t\t\telse\r\n\t\t\t\t\treturn Reflect.get(target, prop, receiver);\r\n\t\t\t},\r\n\t\t});\r\n\t},\r\n});\n\n//# sourceURL=webpack:///./src/Algos/_helpers/Matrix.js?");
+
+/***/ }),
+
 /***/ "./src/Algos/a_star/main.js":
 /*!**********************************!*\
   !*** ./src/Algos/a_star/main.js ***!
@@ -87,7 +108,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Render_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Render.js */ \"./src/Render.js\");\n\r\n\r\n$(function(){\r\n\tlet canvas = $('#canvas_demo_algo');\r\n\tlet ctx = canvas[0].getContext('2d');\r\n\t\r\n\tlet render = new _Render_js__WEBPACK_IMPORTED_MODULE_0__.CanvasRender(ctx);\r\n\trender.hello();\r\n});\n\n//# sourceURL=webpack:///./src/main.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Render_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Render.js */ \"./src/Render.js\");\n/* harmony import */ var _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Algos/_helpers/Matrix.js */ \"./src/Algos/_helpers/Matrix.js\");\n\r\n\r\n\r\n$(function(){\r\n\tlet canvas = $('#canvas_demo_algo');\r\n\tlet ctx = canvas[0].getContext('2d');\r\n\t\r\n\tlet render = new _Render_js__WEBPACK_IMPORTED_MODULE_0__.CanvasRender(ctx);\r\n\trender.hello();\r\n\t\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 10));\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 10).length);\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 20).length);\r\n\tconsole.log(new _Algos_helpers_Matrix_js__WEBPACK_IMPORTED_MODULE_1__.Matrix(10, 20)[3].length);\r\n});\n\n//# sourceURL=webpack:///./src/main.js?");
 
 /***/ })
 
@@ -158,7 +179,9 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Ren
 /******/ 	__webpack_require__("./src/Algos/claster/main.js");
 /******/ 	__webpack_require__("./src/Algos/genetics/main.js");
 /******/ 	__webpack_require__("./src/Algos/nn/main.js");
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/Algos/tree_solution/main.js");
+/******/ 	__webpack_require__("./src/Algos/tree_solution/main.js");
+/******/ 	__webpack_require__("./src/Algos/_helpers/Algo.js");
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/Algos/_helpers/Matrix.js");
 /******/ 	
 /******/ })()
 ;

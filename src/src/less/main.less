@@ -10,6 +10,7 @@ html, body{
 	cursor: url('../img/cur_default_32.png'), default;
 	
 	font-family: 'Sansita Swashed', cursive;
+	color: white;
 }
 
 a, input, area, button, select, textarea{
@@ -38,55 +39,62 @@ header{
 	gap: 1em;
 }
 
-.algo_nav{
-	position: relative;
+.left_panel{
 	display: flex;
 	
-	height: 100%;
-	
+	justify-content: space-between;
 	flex-direction: column;
 	
-	grid-area: nav;
-}
-
-.algo_nav a{
-	display: flex;
-	
-	height: 2.75em;
-	
-	background: #4d4d4d;
-	border: 1px solid gray;
-	
-	justify-content: center;
-	align-items: center;
-	
-	color: white;
-	font-size: 1.5em;
-	
-	text-decoration: none;
-	user-select: none;
-}
-
-.algo_nav .ask{
-	position: absolute;
-	
 	width: 100%;
+	height: 100%;
 	
-	bottom: 0;
+	.algo_nav{
+		display: flex;
+		
+		flex-direction: column;
+		
+		// overflow-y: scroll;
+		
+		grid-area: nav;
+		
+		a{
+			display: flex;
+			
+			height: 2.75em;
+			
+			background: #4d4d4d;
+			border: 1px solid gray;
+			
+			justify-content: center;
+			align-items: center;
+			
+			color: white;
+			font-size: 1.5em;
+			
+			text-decoration: none;
+			user-select: none;
+		}
+	}
+	
+	.ask{
+		width: 100%;
+		
+		bottom: 0;
+	}
 }
 
 .demo{
 	height: 100%;
 	
 	grid-area: demo;
-}
-
-.demo canvas{
-	width: 100%;
-	max-height: 91vh;
-	min-width: 25.5em;
 	
-	aspect-ratio: 1;
+	canvas{
+		width: 100%;
+		max-height: 91vh;
+		min-width: 25.5em;
+
+		aspect-ratio: 1;
+	}
 }
 
 .config_box{
@@ -95,32 +103,133 @@ header{
 	border: 1px solid grey;
 	
 	grid-area: conf;
-}
+	
+	.nya{
+		display: flex;
+		
+		width: calc(100% - 1em);
+		height: 8em;
+		
+		justify-content: center;
+		align-items: center;
+		
+		margin: 0.5em 0.5em 0;
+		
+		border-bottom: 2px solid grey;
+		
+		span{
+			font-family: 'Lobster', cursive;
+			font-size: 5em;
+		}
+		
+		img{
+			width: 70%;
+			height: 8em;
+			
+			float: right;
+		}
+	}
+	
+	.inputs{
+		width: calc(100% - 0.75em * 2);
+		height: calc(100% - 8.5em - 2px - 0.75em * 2);
+		
+		padding: 0.75em;
+		padding-top: 0.25em;
+		
+		div{
+			display: flex;
+			
+			gap: 0.25em;
+			
+			font-size: 1.25em;
+			
+			padding: 0.25em;
+			margin-top: 0.5em;
+			
+			border: 1px dashed grey;
+			
+			*{
+				width: 100%;
+			}
+			
+			span{
+				margin-left: calc(0.25em / 1.25);
+			}
+			
+			input[type=range]{
+				width: calc(100% - 4px);
+			}
+			
+			label{
+				cursor: url('../img/cur_default_32.png'), default;
+			}
+			
+			label.inline{
+				display: flex;
+				flex-direction: row-reverse;
+				
+				justify-content: center;
+				align-items: center;
+				
+				cursor: url('../img/cur_pointer_32.png'), pointer;
+			}
+			
+			input[type=checkbox]{
+				width: 1.5em;
+				height: 3.30em;
+			}
+			
+			input[type=checkbox] + span{
+				display: inline-block;
+				
+				height: 1.5em;
+				width: auto;
+				
+				margin: 0 0.5em 0 0.5em;
+			}
+			
+			input[type=radio]{
+				height: 3.30em;
+				
+				margin: 0;
+			}
+			
+			button{
+				height: 3.30em;
+				
+				padding: 0;
+				border: none;
+			}
+			
+			input[type=radio]:after, button:after{
+				display: flex;
+				
+				align-items: center;
+				justify-content: center;
+				
+				width: 100%;
+				height: 100%;
+				
+				background: #4d4d4d;
+				
+				font-size: 1.5em;
+				font-family: 'Sansita Swashed', cursive;
+				color: white;
+				
+				content: attr(value);
+				
+				transition: 0.15s ease all;
+			}
+			
+			input[type=radio]:hover:after, button:hover:after{
+				background: #5c607d;	
+			}
+			
+			input[type=radio]:active:after, input[type=radio]:checked:after, button:active:after{
+				background: #434354;
+			}
+		}
 
-.config_box .nya{
-	display: flex;
-	
-	width: calc(100% - 1em);
-	height: 8em;
-	
-	justify-content: center;
-	align-items: center;
-	
-	margin: 0.5em 0.5em 0;
-	
-	border-bottom: 2px solid grey;
-}
-
-.config_box .nya span{
-	font-family: 'Lobster', cursive;
-	font-size: 5em;
-	
-	color: white;
-}
-
-.config_box .nya img{
-	width: 70%;
-	height: 8em;
-	
-	float: right;
+	}
 }

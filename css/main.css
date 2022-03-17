@@ -7,6 +7,7 @@ body {
   background-color: #333;
   cursor: url('../img/cur_default_32.png'), default;
   font-family: 'Sansita Swashed', cursive;
+  color: white;
 }
 a,
 input,
@@ -31,14 +32,19 @@ header {
   grid-auto-columns: 16em 1fr 32em;
   gap: 1em;
 }
-.algo_nav {
-  position: relative;
+.left_panel {
   display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  width: 100%;
   height: 100%;
+}
+.left_panel .algo_nav {
+  display: flex;
   flex-direction: column;
   grid-area: nav;
 }
-.algo_nav a {
+.left_panel .algo_nav a {
   display: flex;
   height: 2.75em;
   background: #4d4d4d;
@@ -50,8 +56,7 @@ header {
   text-decoration: none;
   user-select: none;
 }
-.algo_nav .ask {
-  position: absolute;
+.left_panel .ask {
   width: 100%;
   bottom: 0;
 }
@@ -82,10 +87,84 @@ header {
 .config_box .nya span {
   font-family: 'Lobster', cursive;
   font-size: 5em;
-  color: white;
 }
 .config_box .nya img {
   width: 70%;
   height: 8em;
   float: right;
+}
+.config_box .inputs {
+  width: calc(100% - 0.75em * 2);
+  height: calc(100% - 8.5em - 2px - 0.75em * 2);
+  padding: 0.75em;
+  padding-top: 0.25em;
+}
+.config_box .inputs div {
+  display: flex;
+  gap: 0.25em;
+  font-size: 1.25em;
+  padding: 0.25em;
+  margin-top: 0.5em;
+  border: 1px dashed grey;
+}
+.config_box .inputs div * {
+  width: 100%;
+}
+.config_box .inputs div span {
+  margin-left: calc(0.25em / 1.25);
+}
+.config_box .inputs div input[type=range] {
+  width: calc(100% - 4px);
+}
+.config_box .inputs div label {
+  cursor: url('../img/cur_default_32.png'), default;
+}
+.config_box .inputs div label.inline {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: center;
+  align-items: center;
+  cursor: url('../img/cur_pointer_32.png'), pointer;
+}
+.config_box .inputs div input[type=checkbox] {
+  width: 1.5em;
+  height: 3.3em;
+}
+.config_box .inputs div input[type=checkbox] + span {
+  display: inline-block;
+  height: 1.5em;
+  width: auto;
+  margin: 0 0.5em 0 0.5em;
+}
+.config_box .inputs div input[type=radio] {
+  height: 3.3em;
+  margin: 0;
+}
+.config_box .inputs div button {
+  height: 3.3em;
+  padding: 0;
+  border: none;
+}
+.config_box .inputs div input[type=radio]:after,
+.config_box .inputs div button:after {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #4d4d4d;
+  font-size: 1.5em;
+  font-family: 'Sansita Swashed', cursive;
+  color: white;
+  content: attr(value);
+  transition: 0.15s ease all;
+}
+.config_box .inputs div input[type=radio]:hover:after,
+.config_box .inputs div button:hover:after {
+  background: #5c607d;
+}
+.config_box .inputs div input[type=radio]:active:after,
+.config_box .inputs div input[type=radio]:checked:after,
+.config_box .inputs div button:active:after {
+  background: #434354;
 }
