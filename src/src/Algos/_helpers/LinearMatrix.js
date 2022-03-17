@@ -25,6 +25,15 @@ LinearMatrix = new Proxy(ILinearMatrix, {
 				else
 					return Reflect.get(target, prop, receiver);
 			},
+			
+			set(target, prop, value, receiver){
+				if(!isNaN(parseInt(prop)))
+					target.Matrix[prop] = value;
+				else
+					Reflect.set(target, prop, value, receiver);
+				
+				return true;
+			}
 		});
 	},
 });
