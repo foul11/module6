@@ -8,7 +8,7 @@ class IAlgo{
 	
 	*update(){
 		if(this.onstart instanceof Function)
-			this.onstart.bind(this)();
+			this.onstart.call(this)();
 		
 		while(true){
 			/* code... */
@@ -19,11 +19,11 @@ class IAlgo{
 			ret = new LinearMatrix(10, { x:0, y:0 }); /* from LinearMatrix.js */
 			
 			if(this.ondraw instanceof Function)
-				this.ondraw.bind(this)(ret /* return val on draw */);
+				this.ondraw.call(this, ret /* return val on draw */);
 		}
 		
 		if(this.onend instanceof Function)
-			this.onend.bind(this)();
+			this.onend.call(this);
 	}
 	
 	

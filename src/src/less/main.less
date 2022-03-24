@@ -11,6 +11,8 @@ html, body{
 	
 	font-family: 'Sansita Swashed', cursive;
 	color: white;
+	
+	user-select: none;
 }
 
 a, input, area, button, select, textarea{
@@ -58,6 +60,7 @@ header{
 		grid-area: nav;
 		
 		a{
+			position: relative;
 			display: flex;
 			
 			height: 2.75em;
@@ -73,6 +76,20 @@ header{
 			
 			text-decoration: none;
 			user-select: none;
+			
+			img{
+				position: absolute;
+				display:none;
+				
+				height: 100%;
+				right: 0;
+				
+				transform: scale(-1, 1);
+			}
+			
+			&[active] img{
+				display: block;
+			}
 		}
 	}
 	
@@ -90,7 +107,7 @@ header{
 	
 	canvas{
 		width: 100%;
-		max-height: 91vh;
+		max-height: 90vh;
 		min-width: 25.5em;
 
 		aspect-ratio: 1;
@@ -137,6 +154,10 @@ header{
 		padding: 0.75em;
 		padding-top: 0.25em;
 		
+		img{
+			width: 100%;
+		}
+		
 		div{
 			display: flex;
 			
@@ -153,12 +174,75 @@ header{
 				width: 100%;
 			}
 			
+			.noWrapper{
+				display: flex;
+				
+				border: none;
+				
+				padding: 0;
+				margin: 0;
+				font-size: inherit;
+			}
+			
+			.vert, &.vert{
+				flex-direction: column;
+			}
+			
+			.horz, &.horz{
+				flex-direction: row;
+			}
+			
+			.string{
+				height: 1.125em;
+				
+				font-size: 1.5em;
+				line-height: 0.90em;
+				
+				text-align: center;
+				
+				margin: 0;
+				padding: 0;
+			}
+			
 			span{
 				margin-left: calc(0.25em / 1.25);
 			}
 			
+			span:empty{
+				margin: 0;
+			}
+			
 			input[type=range]{
 				width: calc(100% - 4px);
+				overflow: hidden;
+				
+				&::-webkit-slider-thumb, &::-webkit-slider-runnable-track, &{
+					-webkit-appearance: none;
+				}
+				
+				&::-webkit-slider-runnable-track{
+					height: 1.5em;
+					
+					background: #4a4a4a;
+					box-shadow: inset 0px 0px 0.25em 0em black;
+				}
+				
+				&::-webkit-slider-thumb{
+					position: relative;
+					width: 1.5em;
+					height: 1.5em;
+					
+					background: #5c607d;
+					
+					border-radius: 15%;
+					border: 2px solid grey;
+					
+					// box-shadow: -100em 0 0 99.5em #434354;
+				}
+				
+				&::-webkit-slider-thumb:active{
+					background: #434354;
+				}
 			}
 			
 			label{
@@ -176,18 +260,18 @@ header{
 			}
 			
 			input[type=checkbox]{
-				width: 1.5em;
-				height: 3.30em;
+				height: 3.3em;
+				margin: 0;
 			}
 			
-			input[type=checkbox] + span{
-				display: inline-block;
+			// input[type=checkbox] + span{
+				// display: inline-block;
 				
-				height: 1.5em;
-				width: auto;
+				// height: 1.5em;
+				// width: auto;
 				
-				margin: 0 0.5em 0 0.5em;
-			}
+				// margin: 0 0.5em 0 0.5em;
+			// }
 			
 			input[type=radio]{
 				height: 3.30em;
@@ -202,34 +286,64 @@ header{
 				border: none;
 			}
 			
-			input[type=radio]:after, button:after{
-				display: flex;
+			input[type=radio], button, input[type=checkbox]{
+				&:after{
+					display: flex;
+					
+					align-items: center;
+					justify-content: center;
+					
+					width: 100%;
+					height: 100%;
+					
+					background: #4d4d4d;
+					
+					font-size: 1.5em;
+					font-family: 'Sansita Swashed', cursive;
+					color: white;
+					
+					content: attr(value);
+					
+					transition: 0.15s ease all;
+				}
 				
-				align-items: center;
-				justify-content: center;
+				&:hover:after{
+					background: #5c607d;
+				}
 				
-				width: 100%;
-				height: 100%;
+				&:active:after{
+					background: #434354;
+				}
+				
+				&:checked:after{
+					background: #434354;
+				}
+			}
+			
+			input[type=text], input[type=number]{
+				height: 1.5em;
+				font-size: 1.5em;
+				
+				padding: 0.25em;
+				border: none;
 				
 				background: #4d4d4d;
+				box-shadow: inset 0px 0px 0.25em 0em black;
 				
-				font-size: 1.5em;
-				font-family: 'Sansita Swashed', cursive;
+				cursor: url('../img/cur_text_32.png'), text;
+				
 				color: white;
 				
-				content: attr(value);
+				&:active, &:hover, &:focus{
+					outline: 0;
+					outline-offset: 0;
+				}
 				
-				transition: 0.15s ease all;
-			}
-			
-			input[type=radio]:hover:after, button:hover:after{
-				background: #5c607d;	
-			}
-			
-			input[type=radio]:active:after, input[type=radio]:checked:after, button:active:after{
-				background: #434354;
+				&::-webkit-outer-spin-button,
+				&::-webkit-inner-spin-button{
+					display: none;
+				}
 			}
 		}
-
 	}
 }

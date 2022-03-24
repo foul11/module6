@@ -1,4 +1,4 @@
-class IMatrix{
+export class IMatrix{
 	constructor(width, height, fill = 0){
 		this.fill(width, height, fill);
 	}
