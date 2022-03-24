@@ -1,5 +1,7 @@
 import { Algo_Ant } from './Algos/ant/main.js';
+import { Algo_a_star } from './Algos/a_star/main.js';
 import { Config } from './Config.js';
+import { Matrix } from './Algos/_helpers/Matrix.js';
 
 export class CanvasRender{
 	constructor(ctx, width = null, height = null){
@@ -77,6 +79,41 @@ export class CanvasRender{
 		this.onresize = helloDraw;
 	}
 	
+	a_star(){
+		let a_star = new Algo_a_star(new Matrix(this.width, this.height));
+		a_star.ondraw = function(render, deltaT, out){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+
+			ctx.clearRect(0, 0, ctxWidth, ctxHeight);
+			ctx.save();
+				ctx.fillStyle = out.color;
+				ctx.fillRect(out.x, out.y, 2, 2);
+			ctx.restore();
+		}.bind(a_star, this);
+
+		Config.clear();
+		Config.add([
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						value: 'Maze',
+						on: { click: function(e){
+							a_star.labirint();
+						}.bind(this), },
+					},
+				],
+			},
+		]);
+
+		let updater = a_star.update();
+		
+		this.ondraw = updater.next.bind(updater);
+	}
+
 	ant(){
 		let cursorPos = { x: 0, y: 0 };
 		let Ant = new Algo_Ant(this.width, this.height);

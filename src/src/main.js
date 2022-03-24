@@ -82,4 +82,5 @@ $(function(){
 	render.hello();
 	
 	// $('[data-algo="ant"]').click();
+	$('[data-algo="a_star"]').click();
 });
