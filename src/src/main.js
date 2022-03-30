@@ -79,8 +79,8 @@ $(function(){
 		}
 	]);*/
 	
-	render.hello();
-	
+	//render.hello();
+	render.genetics();
 	// $('[data-algo="ant"]').click();
 	$('[data-algo="a_star"]').click();
 });
