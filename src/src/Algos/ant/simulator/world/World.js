@@ -149,7 +149,7 @@ export class World{
 	}
 	
 	getByRange(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
-		let ret = [];
+		let gets = {};
 		
 		let { ceilRange, Scale, Maps } = this._SelectSearchParam(range, SearchMap);
 		let fPos = pos.div(Scale).floor();
@@ -161,17 +161,23 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i].getPos().dist(pos) <= range && objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
-						ret.push(objs[i]);
+					if(objs[i].getPos().dist(pos) <= range && objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
+						// ret.push(objs[i]);
+						gets[i] = objs[i];
 					}
 				}
 			}
+		
+		let ret = [];
+		
+		for(let k in gets)
+			ret.push(gets[k]);
 		
 		return ret;
 	}
 	
-	getByChuckPos(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
-		let ret = [];
+	getByChunkPos(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
+		let gets = {};
 		
 		let { ceilRange, Scale, Maps } = this._SelectSearchParam(range, SearchMap);
 		let fPos = pos.div(Scale).floor();
@@ -183,11 +189,17 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
-						ret.push(objs[i]);
+					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
+						// ret.push(objs[i]);
+						gets[i] = objs[i];
 					}
 				}
 			}
+		
+		let ret = [];
+		
+		for(let k in gets)
+			ret.push(gets[k]);
 		
 		return ret;
 	}
@@ -203,7 +215,7 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
+					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
 						return objs[i];
 					}
 				}

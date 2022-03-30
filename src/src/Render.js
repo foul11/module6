@@ -1,16 +1,12 @@
 import { Algo_Ant } from './Algos/ant/main.js';
+import { Algo_NN } from './Algos/nn/main.js';
 import { Config } from './Config.js';
 
 export class CanvasRender{
 	constructor(ctx, width = null, height = null){
 		const { width: ctxWidth, height: ctxHeight } = ctx.canvas.getBoundingClientRect();
 		
-		this.onresize = null;
-		this.ondraw = null;
-		
-		this.onmmove = null;
-		this.onmdown = null;
-		this.onmenter = null;
+		this._resetEvent();
 		
 		this.ctx = ctx;
 		
@@ -27,6 +23,8 @@ export class CanvasRender{
 		this.lastPerfomans;
 		this.SpeedMultiplier = 1;
 		
+		this.AlgosState = {};
+		
 		ctx.canvas.width = ctxWidth;
 		ctx.canvas.height = ctxHeight;
 		
@@ -36,11 +34,26 @@ export class CanvasRender{
 		$(ctx.canvas).on('mousedown', this.mdown.bind(this));
 		$(ctx.canvas).on('mouseenter', this.menter.bind(this));
 		
+		$(window).on('keydown', this.kdown.bind(this));
 		$(window).on('resize', this.resize.bind(this));
+		
 		requestAnimationFrame(this.draw.bind(this));
 	}
 	
+	_resetEvent(){
+		this.onresize = null;
+		this.ondraw = null;
+		
+		this.onmmove = null;
+		this.onmdown = null;
+		this.onmenter = null;
+		
+		this.onkeydown = null;
+	}
+	
 	hello(){
+		this._resetEvent();
+		
 		let imgHello = $('<img/>');
 		this.imgHello = imgHello;
 		
@@ -78,9 +91,13 @@ export class CanvasRender{
 	}
 	
 	ant(){
+		this._resetEvent();
+		
 		let cursorPos = { x: 0, y: 0 };
-		let Ant = new Algo_Ant(this.width, this.height);
+		let Ant = this.AlgosState.Algo_Ant ?? new Algo_Ant(this.width, this.height);
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		this.AlgosState.Algo_Ant = Ant;
 		
 		Ant.ondraw = function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
@@ -269,6 +286,91 @@ export class CanvasRender{
 		this.ondraw = updater.next.bind(updater);
 	}
 	
+	nn(){
+		this._resetEvent();
+		
+		let cursorPos = { x: 0, y: 0 };
+		let NN = this.AlgosState.Algo_NN ?? new Algo_NN(this.width, this.height);
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		this.AlgosState.Algo_NN = NN;
+		
+		NN.ondraw = function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+			
+			let processed = NN._preProcessing(ctxImage.getImageData(0, 0, NN.width, NN.height), ctx);
+			
+			if(processed !== false){
+				ctx.putImageData(new ImageData(processed.data, processed.width, processed.height), 100, 100);
+				
+				let recognize = 'NN_DATA: [' + NN.NN(NN._grayscaleToLinear(processed.data)) + ']';
+				
+				ctx.save();
+					ctx.font = "2.5em monospace";
+					ctx.strokeStyle = 'black';
+					ctx.fillStyle = 'red';
+					ctx.textAlign = 'right';
+					ctx.textBaseline = 'bottom';
+					ctx.lineWidth = 8;
+					ctx.strokeText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+					ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+				ctx.restore();
+			}
+		}.bind(NN, this);
+		
+		let BrushSwitch = 'brush';
+		let BrushColor = '#FFF';
+		let BrushSize = 10;
+		
+		let CalcAspect = function(x, y, repeat = false){
+			let aspX = NN.width / this.width;
+			let aspY = NN.height / this.height;
+			
+			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
+		}.bind(this);
+		
+		this.onmdown = (...e) => { NN.startUndo(); setCursorPos(...e); };
+		this.onmenter = setCursorPos;
+		this.onmmove = function(e){
+			if(e.buttons !== 1){ NN.endUndo(); return; }
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			let aspX = NN.width / this.width;
+			let aspY = NN.height / this.height;
+			
+			switch(BrushSwitch){
+				case 'brush':
+					NN.brush(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor);
+					break;
+				
+				case 'erase':
+					NN.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					break;
+			}
+			
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		this.onkeydown = function(e){
+			if(e.ctrlKey && e.key == 'z'){ NN.undo(); return; }
+			if(e.ctrlKey && e.key == 'y'){ NN.redo(); return; }
+		};
+		
+		Config.clear();
+		Config.add([
+		]);
+		
+		let updater = NN.update();
+		
+		this.ondraw = updater.next.bind(updater);
+	}
+	
 	_drawFps(deltaT, ctx){
 		this.averageFPS.push(deltaT);
 		if(this.averageFPS.length > 20)
@@ -282,14 +384,14 @@ export class CanvasRender{
 		let fps = "FPS: " + Math.round(1000 / (sum / this.averageFPS.length), 2);
 		
 		ctx.save();
-		ctx.font = "2.5em monospace";
-		ctx.strokeStyle = 'black';
-		ctx.fillStyle = 'red';
-		ctx.textAlign = 'right';
-		ctx.textBaseline = 'top';
-		ctx.lineWidth = 8;
-		ctx.strokeText(fps, ctx.canvas.width - 10, 10);
-		ctx.fillText(fps, ctx.canvas.width - 10, 10);
+			ctx.font = "2.5em monospace";
+			ctx.strokeStyle = 'black';
+			ctx.fillStyle = 'red';
+			ctx.textAlign = 'right';
+			ctx.textBaseline = 'top';
+			ctx.lineWidth = 8;
+			ctx.strokeText(fps, ctx.canvas.width - 10, 10);
+			ctx.fillText(fps, ctx.canvas.width - 10, 10);
 		ctx.restore();
 	}
 	
@@ -345,5 +447,10 @@ export class CanvasRender{
 	mmove(...args){
 		if(this.onmmove instanceof Function)
 			this.onmmove.call(this, ...args);
+	}
+	
+	kdown(...args){
+		if(this.onkeydown instanceof Function)
+			this.onkeydown.call(this, ...args);
 	}
 };

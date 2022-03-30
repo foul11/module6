@@ -39,6 +39,9 @@ export class Colony extends Entity_base{
 			
 			if((Ant = new Ant_base(this.world, this.getPos().add(rv.inv().randomize(rv)))) instanceof Ant_base){
 				Ant.rotate(Vector.random(0, Math.PI * 2));
+				Ant.ondestruct = () => { this.ants--; };
+				Ant.base = this;
+				
 				this.ants++;
 			}
 		}

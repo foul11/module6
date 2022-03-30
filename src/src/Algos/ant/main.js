@@ -102,6 +102,8 @@ export class Algo_Ant{
 	}
 	
 	spawn(x1, y1, x2, y2, size, entity, type = 'circle'){
+		[x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
+		
 		switch(entity){
 			case 'Food':
 				entity = Food;
@@ -132,11 +134,6 @@ export class Algo_Ant{
 				break;
 		}
 		
-		x1 = Math.floor(x1);
-		x2 = Math.floor(x2);
-		y1 = Math.floor(y1);
-		y2 = Math.floor(y2);
-		
 		this._figureCallbacker(x1, y1, x2, y2, size, type, (x, y) => {
 			let SpawnPos = new Vector(x, y);
 			
@@ -146,14 +143,11 @@ export class Algo_Ant{
 	}
 	
 	erase(x1, y1, x2, y2, size, filter = '', type = 'circle'){
-		x1 = Math.floor(x1);
-		x2 = Math.floor(x2);
-		y1 = Math.floor(y1);
-		y2 = Math.floor(y2);
+		[x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		
 		this._figureCallbacker(x1, y1, x2, y2, size, type, (x, y) => {
 			let pos = new Vector(x, y);
-			let ents = this.world.getByChuckPos(pos, 0, filter, null, 'Map1');
+			let ents = this.world.getByChunkPos(pos, 0, filter, null, 'Map1');
 			
 			Wall.destruct(this.world, pos);
 			

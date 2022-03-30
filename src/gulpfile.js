@@ -39,16 +39,26 @@ let tasks = {
 	},
 	
 	build(cb){
-		return gulp.src('src/**/*.js')
+		return gulp.src(['src/**/*.js', '!src/**/_ignore/**/*'])
 			.pipe(plumber())
 			// .pipe(babel())
 			.pipe(webpack({
 				mode: 'development',
-				// experiments: {
+				experiments: {
+					asset: true,
 					// topLevelAwait: true
-				// },
+				},
 				output: {
 					filename: 'main.js',
+				},
+				
+				module: {
+					rules: [
+						{
+							type: 'asset/source',
+							test: /.+\.weight/,
+						},
+					],
 				},
 			}, compiler))
 			.pipe(header(`document.write('<script async src=\\"http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1\\"></' + 'script>'); `))
@@ -70,7 +80,7 @@ let tasks = {
 	watch(cb){
 		refresh.listen();
 		
-		gulp.watch(['src/**/*.js'], tasks.build);
+		gulp.watch(['src/**/*.js', '!src/**/_ignore/**/*'], tasks.build);
 		gulp.watch(['src/less/**/*.less'], tasks.less);
 		gulp.watch(['../index.html'], tasks.refresh);
 	}
