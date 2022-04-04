@@ -1,4 +1,4 @@
-class IAlgo{
+export class IAlgo{
 	constructor(){
 		this.onstart = null;
 		this.onend = null;

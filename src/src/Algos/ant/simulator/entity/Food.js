@@ -2,8 +2,8 @@ import { Entity_stackable } from './Entity_stackable.js';
 import { Vector } from '../../../_helpers/Vector.js';
 
 export class Food extends Entity_stackable{
-	constructor(world, pos, chance, maxStack = 120, ...args){
-		super(world, pos, chance, maxStack, 3, ...args);
+	constructor(world, pos, chance, splice = 1, minStack = 0, maxStack = 120, ...args){
+		super(world, pos, chance, splice, minStack, maxStack, 3, ...args);
 		this.isCollide = true;
 	}
 	

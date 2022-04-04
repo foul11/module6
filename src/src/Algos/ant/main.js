@@ -9,13 +9,6 @@ import { Colony } from './simulator/entity/Colony.js';
 import { Vector } from '../_helpers/Vector.js';
 import { Figure } from './simulator/Figure.js';
 
-/* TODO:
-	Добавить Феромоны наследуя их Entity_stackable
-	2 типа Феромоно:
-		1: феромон от дома
-		2: Феромон от еды
-*/
-
 export class Algo_Ant{
 	constructor(width, height){
 		this.onstart = null;
@@ -46,8 +39,16 @@ export class Algo_Ant{
 	}
 	
 	resize(width, height){
+		let confSCM = this.world.SCM;
+		let confRenderDisabled = this.world.renderDisabled;
+		let confTickDisabled = this.world.tickDisabled;
+		
 		this.world.destruct();
 		this.init(width, height);
+		
+		this.world.SCM = confSCM;
+		this.world.renderDisabled = confRenderDisabled;
+		this.world.tickDisabled = confTickDisabled;
 		
 		return this;
 	}
@@ -68,12 +69,12 @@ export class Algo_Ant{
 			// ent5.speed.y = 200;
 		}
 		
-		for(let i = 0; i < 10000; i++){
+		// for(let i = 0; i < 10000; i++){
 			// let ent5 = new Food(this.world, (new Vector(100,100)).randomize(new Vector(width / 16 + 100, height / 16 + 100)));
 			
 			// ent5.speed.x = 120;
 			// ent5.speed.y = 120;
-		}
+		// }
 		
 		// console.log(this.world.trace(new Vector(482, 200), new Vector(123.22567828474871, 790.7337744514194)));
 		// console.log(this.world.trace(new Vector(783.3512, 210.17), new Vector(784.0217991873466, 210.1149655319573)));
@@ -101,41 +102,74 @@ export class Algo_Ant{
 		}
 	}
 	
-	spawn(x1, y1, x2, y2, size, entity, type = 'circle'){
+	_nameToClass(entity){
 		switch(entity){
 			case 'Food':
-				entity = Food;
+				return Food;
 				break;
 			
 			case 'Wall':
-				entity = Wall;
+				return Wall;
 				break;
 			
 			case 'Colony':
-				entity = Colony;
+				return Colony;
 				break;
 			
 			case 'Ant_base':
-				entity = Ant_base;
+				return Ant_base;
 				break;
 			
 			case 'Marker_food':
-				entity = Marker_food;
+				return Marker_food;
 				break;
 			
 			case 'Marker_home':
-				entity = Marker_home;
+				return Marker_home;
 				break;
 			
 			case 'Entity_base':
-				entity = Entity_base;
+				return Entity_base;
 				break;
 		}
+	}
+	
+	getSettings(name){
+		switch(name){
+			case 'colonyDefAnts':
+				return Colony.defMaxSpawn;
+				break;
+		}
+	}
+	
+	setSettings(name, val){
+		switch(name){
+			case 'colonyDefAnts':
+				Colony.defMaxSpawn = val;
+				break;
+		}
+	}
+	
+	superConfigurableMode(en){
+		this.world.SCM = en;
+	}
+	
+	disableRenderer(entity, opt){
+		this.world.disableRenderer(this._nameToClass(entity), opt);
+	}
+	
+	disableTicker(entity, opt){
+		this.world.disableTicker(this._nameToClass(entity), opt);
+	}
+	
+	algo_path(path){
+		Ant_base.PATH_ALGO = path;
+	}
+	
+	spawn(x1, y1, x2, y2, size, entity, type = 'circle'){
+		[x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		
-		x1 = Math.floor(x1);
-		x2 = Math.floor(x2);
-		y1 = Math.floor(y1);
-		y2 = Math.floor(y2);
+		entity = this._nameToClass(entity);
 		
 		this._figureCallbacker(x1, y1, x2, y2, size, type, (x, y) => {
 			let SpawnPos = new Vector(x, y);
@@ -146,14 +180,11 @@ export class Algo_Ant{
 	}
 	
 	erase(x1, y1, x2, y2, size, filter = '', type = 'circle'){
-		x1 = Math.floor(x1);
-		x2 = Math.floor(x2);
-		y1 = Math.floor(y1);
-		y2 = Math.floor(y2);
+		[x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		
 		this._figureCallbacker(x1, y1, x2, y2, size, type, (x, y) => {
 			let pos = new Vector(x, y);
-			let ents = this.world.getByChuckPos(pos, 0, filter, null, 'Map1');
+			let ents = this.world.getByChunkPos(pos, 0, filter, null, 'Map1');
 			
 			Wall.destruct(this.world, pos);
 			

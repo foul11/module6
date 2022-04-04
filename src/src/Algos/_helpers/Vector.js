@@ -235,11 +235,11 @@ class _Vector{
 	}
 	
 	horizontalAngleDeg(){
-		return this.rad2deg(Math.atan2(this.x, this.y));
+		return _Vector.rad2deg(Math.atan2(this.x, this.y));
 	}
 	
 	verticalAngleDeg(){
-		return this.rad2deg(Math.atan2(this.y, this.x));
+		return _Vector.rad2deg(Math.atan2(this.y, this.x));
 	}
 	
 	// angle = this.horizontalAngle;
@@ -257,7 +257,7 @@ class _Vector{
 	}
 	
 	rotateDeg(ang){
-		return this.rotate(this.deg2rad(ang));
+		return this.rotate(_Vector.deg2rad(ang));
 	}
 	
 	rotateTo(ang){
@@ -265,7 +265,7 @@ class _Vector{
 	}
 	
 	rotateToDeg(ang){
-		return this.rotate(this.deg2rad(ang) - this.horizontalAngle());
+		return this.rotate(_Vector.deg2rad(ang) - this.horizontalAngle());
 	}
 	
 	rotateBy(ang){
@@ -273,7 +273,7 @@ class _Vector{
 	}
 	
 	rotateByDeg(ang){
-		return this.rotate(this.deg2rad(ang) + this.ang());
+		return this.rotate(_Vector.deg2rad(ang) + this.ang());
 	}
 	
 	distX(vec){ return this.x - vec.x; }

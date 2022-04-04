@@ -112,9 +112,9 @@ export class Entity_base{
 		let pos16 = pos1.div(16).floor();
 		let pos32 = pos1.div(32).floor();
 		
-		delete this.world.Map1[pos1.x][pos1.y].inObj[this.id];
-		delete this.world.Map16[pos16.x][pos16.y].inObj[this.id];
-		delete this.world.Map32[pos32.x][pos32.y].inObj[this.id];
+		delete this.world.Map1[pos1.x]?.[pos1.y]?.inObj[this.id];
+		delete this.world.Map16[pos16.x]?.[pos16.y]?.inObj[this.id];
+		delete this.world.Map32[pos32.x]?.[pos32.y]?.inObj[this.id];
 		
 		this.#pos = null;
 		delete this.speed;
