@@ -80,33 +80,113 @@ export class CanvasRender{
 	}
 	
 	a_star(){
-		let a_star = new Algo_a_star(new Matrix(this.width, this.height));
+		let a_star = new Algo_a_star(new Matrix(this.width, this.height), this.width, this.height);
 		a_star.ondraw = function(render, deltaT, out){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
 
 			ctx.clearRect(0, 0, ctxWidth, ctxHeight);
-			ctx.save();
-				ctx.fillStyle = out.color;
-				ctx.fillRect(out.x, out.y, 2, 2);
+			//ctx.save();
+				//ctx.fillStyle = out.color;
+				//ctx.fillRect(out.x, out.y, 2, 2);
 			ctx.restore();
 		}.bind(a_star, this);
 
 		Config.clear();
 		Config.add([
 			{
-				type: 'wrapper',
+				type: 'wrapper-vert',
 				child: [
 					{
-						type: 'button',
-						value: 'Maze',
-						on: { click: function(e){
-							a_star.labirint();
-						}.bind(this), },
+						type: 'horz',
+						on: {
+							text:{
+								input: function(e){
+									this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								},
+							},
+						},
+						child: [
+							{
+								type: 'text',
+								placeholder: 'Width',
+								id: 'conf-width',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'Height',
+								id: 'conf-height',
+								min: 0,
+							},
+						],
 					},
-				],
+					{
+						type: 'button',
+						value: 'Create maze',
+						on: { click: function(){
+							let width = parseInt($('#conf-width').val())+2;
+							let height = parseInt($('#conf-height').val())+2;
+							a_star.resize(new Matrix(width || this.width,  height|| this.height), width || this.width, height|| this.height);
+							a_star.labirint();},
+						},
+					},
+				]
 			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'horz',
+						on: {
+							text:{
+								input: function(e){
+									this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								},
+							},
+						},
+						child: [
+							{
+								type: 'text',
+								placeholder: 'start_x',
+								id: 'start_x',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'start_y',
+								id: 'start_y',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'end_x',
+								id: 'end_x',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'end_y',
+								id: 'end_y',
+								min: 0,
+							},
+						],
+					},
+					{
+						type: 'button',
+						value: 'Find Put',
+						on: { click: function(){
+							let start_x = parseInt($('#start_x').val());
+							let start_y = parseInt($('#start_y').val()) ;
+							let end_x = parseInt($('#end_x').val());
+							let end_y = parseInt($('#end_y').val());
+							a_star.algos_a_star(start_x, start_y, end_x, end_y)},
+						},
+					},
+				]
+			},
+			
 		]);
 
 		let updater = a_star.update();
