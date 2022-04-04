@@ -1,6 +1,10 @@
 import { Algo_Ant } from './Algos/ant/main.js';
 import { Algo_NN } from './Algos/nn/main.js';
+import { Algo_a_star } from './Algos/a_star/main.js';
+import { Algo_Claster } from './Algos/claster/main.js';
 import { Config } from './Config.js';
+import { Matrix } from './Algos/_helpers/Matrix.js';
+import { Algo_Genetics } from "./Algos/genetics/main";
 
 export class CanvasRender{
 	constructor(ctx, width = null, height = null){
@@ -111,6 +115,82 @@ export class CanvasRender{
 		this.onresize = helloDraw;
 	}
 	
+	a_star(){
+		let a_star = new Algo_a_star(new Matrix(this.width, this.height));
+		a_star.ondraw = function(render, deltaT, out){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+
+			ctx.clearRect(0, 0, ctxWidth, ctxHeight);
+			ctx.save();
+				ctx.fillStyle = out.color;
+				ctx.fillRect(out.x, out.y, 2, 2);
+			ctx.restore();
+		}.bind(a_star, this);
+
+		Config.clear();
+		Config.add([
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						value: 'Maze',
+						on: { click: function(e){
+							a_star.labirint();
+						}.bind(this), },
+					},
+				],
+			},
+		]);
+
+		let updater = a_star.update();
+		
+		this.ondraw = updater.next.bind(updater);
+	}
+
+	claster(){
+		let arr = [
+			[1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+			[1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+			[0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			[0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]
+		]
+		let mass = new Matrix();
+		mass = arr;
+		let Cl = new Algo_Claster(mass);
+		console.log(Cl.k_means(4));
+	}
+
+	genetics(){
+		let arr = [
+			[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		]
+		let mass = new Matrix();
+		mass = arr;
+		let point = {x:2, y:2};
+		let Gen = new Algo_Genetics(mass);
+		console.log(Gen.matrix_adjacency);
+
+		console.log(Gen.genetic(point,4));
+	}
+
 	ant(){
 		this._resetEvent();
 		
