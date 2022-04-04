@@ -5,19 +5,40 @@ import { Marker_home } from './Marker_home.js';
 import { Marker_food } from './Marker_food.js';
 import { Food } from './Food.js';
 
+import { Config } from '../../../../Config.js';
+
+
 export class Colony extends Entity_base{
 	static #create_Colony_id = 0;
+	static defMaxSpawn = 100;
 	
 	constructor(world, pos, ...arg){ /* TODO: on construct add config menu */
-		
 		if(!world.checkByChunkPos(pos, 10, 'Colony', null)){
 			super(world, pos, ...arg);
 		}else return {};
 		
-		this.maxAnt = 100;
+		this.maxAnt = Colony.defMaxSpawn;
 		this.ants = 0;
 		this.isCollide = true;
 		this.Colony_id = Colony.#create_Colony_id++;
+		
+		this.SCM = Config.add([
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: '[Entity Colony('+ this.id +')]',
+					},
+					{
+						type: 'horz',
+						child: [
+							
+						],
+					},
+				],
+			},
+		]);
 	}
 	
 	setPos(){}
@@ -32,7 +53,7 @@ export class Colony extends Entity_base{
 		ctx.fill();
 	}
 	
-	tick(deltaT){ /* TODO: On destruct ant, spawn new ant */
+	tick(deltaT){
 		if(this.ants < this.maxAnt){
 			let rv = new Vector(20);
 			let Ant = null;

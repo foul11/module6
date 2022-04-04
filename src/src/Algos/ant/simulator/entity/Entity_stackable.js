@@ -9,6 +9,7 @@ export class Entity_stackable extends Entity_base{
 		let ents = world.getByRange(pos, stackRange, new.target.name, null, 'Map16');
 		
 		if(Math.random() * 100 <= chance) return {};
+		if(slice < minStack) return {};
 		
 		/* if(ents.length > 1){
 			throw Error(new.target.name + ' not one from this pos ' + pos);
@@ -22,7 +23,7 @@ export class Entity_stackable extends Entity_base{
 			
 			this.minStack = minStack;
 			this.maxStack = maxStack;
-			this.stack = 1;
+			this.stack = slice;
 			
 			return;
 		}
