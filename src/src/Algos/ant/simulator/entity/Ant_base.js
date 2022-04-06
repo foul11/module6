@@ -33,7 +33,7 @@ export class Ant_base extends Entity_base{
 		this.hasFood = false;
 		this.intesivity = 1;
 		// this.degradeteIntesivity = 0.99;
-		this.degradeteIntesivity = 0.1;
+		this.degradeteIntesivity = 0.005;
 		this.timer = 0;
 		
 		this.size = new Vector(10, 3).mul(2);
@@ -87,7 +87,7 @@ export class Ant_base extends Entity_base{
 		let CMarker = this.hasFood ? Marker_home : Marker_food;
 		let SelBioMarker = null;
 		
-		if(this.timer <= 0 && Ant_base.PATH_ALGO == 1)
+		if(this.timer <= 0 && Ant_base.PATH_ALGO == 2)
 			for(let i=0; i < samples; i++){
 				let RotAng = Random.rangeF(findAng);
 				let NDirect = this.speed.normalize().rotate(RotAng);
@@ -115,7 +115,7 @@ export class Ant_base extends Entity_base{
 		// -От муравья смотреть клетки, искать маркеры, отнимать позицию червика от позиции маркера (вектор направления), получившиеся вектор умножить на интенсивность маркера
 		// -сложить все вектора вместе и взять нормаль, должен получится правильный вектор движения
 		
-		if(Ant_base.PATH_ALGO == 2){
+		if(Ant_base.PATH_ALGO == 1){
 			let ents = this.world.getByChunkPos(this.getPos(), findDist, CMarker, this);
 			let FoodsEnts = this.world.getByChunkPos(this.getPos(), findDist, Food, this);
 			
@@ -134,6 +134,11 @@ export class Ant_base extends Entity_base{
 					this.timer = 0.8;
 				}
 			}
+			
+			ents = this.world.getByChunkPos(this.getPos(), 3, CMarker, this);
+			
+			for(let i of ents)
+				i.stack *= 0.95;
 		}
 		
 		this.timer = Math.max(0, this.timer - deltaT);
@@ -203,7 +208,7 @@ export class Ant_base extends Entity_base{
 		if(this.hasFood)
 			CMarker = new Marker_food(this.world, Hit.pos, 0, this.intesivity, 0.005);
 		else
-			CMarker = new Marker_home(this.world, Hit.pos, 0, this.intesivity, 0.005, 3);
+			CMarker = new Marker_home(this.world, Hit.pos, 0, this.intesivity, 0.005);
 		
 		// if(CMarker instanceof Marker)
 			// CMarker.stack *= this.intesivity;
@@ -262,7 +267,7 @@ export class Ant_base extends Entity_base{
 			// ctx.moveTo(...start);
 			// ctx.lineTo(...start.sub(ptr));
 		// ctx.stroke();
-		super.render(...arguments);
+		// super.render(...arguments);
 	}
 	
 	tick(deltaT){
@@ -295,12 +300,13 @@ export class Ant_base extends Entity_base{
 		this.setPos(Hit.pos);
 		this.placeBioMarker(Hit, deltaT);
 		
-		if(this.base && this.base !== null)
+		if(this.base && this.base.getPos()){
 			if(this.base.getPos().dist(this.getPos()) < 30 && this.hasFood){
 				this.hasFood = false;
-				this.intesivity = 0.5;
+				this.intesivity = 1;
 				
 				this.speed = this.speed.rotate(Math.PI);
 			}
+		}else this.base = null;
 	}
 }

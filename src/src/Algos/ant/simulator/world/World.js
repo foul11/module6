@@ -1,5 +1,5 @@
 import { Vector } from '../../../_helpers/Vector.js';
-import { Figure } from '../Figure.js';
+import { Figure } from '../../../_helpers/Figure.js';
 import { Hit } from './Hit.js';
 
 export class World{

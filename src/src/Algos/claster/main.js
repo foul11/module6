@@ -11,6 +11,8 @@ export class Algo_Claster {
         this.matrix_output = new Matrix(matrix.length, matrix[0].length, 0);
         this._search_points();
 		
+		this.dist_name = 'Euclid';
+		
         this.onstart = null;
         this.onend = null;
         this.ondraw = null;
@@ -36,8 +38,8 @@ export class Algo_Claster {
                 min_dist = Infinity;
                 near_claster = 0;
                 for (let j = 0; j < centre_claster.length; j++) {
-                    if (this._get_dist(this.points[i], centre_claster[j]) < min_dist) {
-                        min_dist = this._get_dist(this.points[i], centre_claster[j]);
+                    if (this['_get_dist_' + this.dist_name](this.points[i], centre_claster[j]) < min_dist) {
+                        min_dist = this['_get_dist_' + this.dist_name](this.points[i], centre_claster[j]);
                         near_claster = j;
                     }
                 }
@@ -97,10 +99,20 @@ export class Algo_Claster {
     min_cover_tree(count_claster, max_dist){//count_claster - количество , max_dist - порог расстояния (нужно передать один из них, второй пришли underfined)
         return this.points;
     }
-
-    layered(max_dists){//max_dist - последлвательность порогов расстояния
-        return this.points;
-    }
+	
+	changeDistFunc(name){
+		switch(name){
+			case 'Euclid':
+			case 'Euclid_square':
+			case 'Manhattan':
+			case 'Chebyshev':
+				this.dist_name = name;
+				break;
+				
+			default:
+				throw Error('Dist function Error name');
+		}
+	}
 
     _search_points() {
         this.count_point = 0;
@@ -119,9 +131,19 @@ export class Algo_Claster {
         }
     }
 
-    _get_dist(point1 = {}, point2 = {}) {
-        let res;
-        res = ((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2) ** (1 / 2);
-        return res;
+    _get_dist_Euclid(point1 = {}, point2 = {}) {
+        return ((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2) ** (1 / 2);
+    }
+	
+    _get_dist_Euclid_square(point1 = {}, point2 = {}) {
+		return ((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2);
+    }
+	
+    _get_dist_Manhattan(point1 = {}, point2 = {}) {
+        return (Math.abs(point2.x - point1.x) + Math.abs(point2.y - point1.y));
+    }
+	
+    _get_dist_Chebyshev(point1 = {}, point2 = {}) {
+        return Math.max(Math.abs(point2.x - point1.x), Math.abs(point2.y - point1.y));
     }
 }

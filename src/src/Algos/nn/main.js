@@ -132,7 +132,7 @@ export class Algo_NN{
 			for(let i in deleted){
 				ctx.save();
 					for(let j in deleted[i])
-						this._drawLine(ctx, deleted[i][j]);
+						this._draw(ctx, deleted[i][j]);
 				ctx.restore();
 				
 				this.currUndoI--;

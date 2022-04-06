@@ -3,6 +3,7 @@ import { Algo_NN } from './Algos/nn/main.js';
 import { Algo_a_star } from './Algos/a_star/main.js';
 import { Algo_Claster } from './Algos/claster/main.js';
 import { Config } from './Config.js';
+import { UCanvas } from './Algos/_helpers/UCanvas.js';
 import { Matrix } from './Algos/_helpers/Matrix.js';
 import { Algo_Genetics } from "./Algos/genetics/main";
 
@@ -151,22 +152,368 @@ export class CanvasRender{
 	}
 
 	claster(){
-		let arr = [
-			[1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-			[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-			[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-			[1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
-			[0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-			[0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]
-		]
-		let mass = new Matrix();
-		mass = arr;
-		let Cl = new Algo_Claster(mass);
-		console.log(Cl.k_means(4));
+		let prevState = this.AlgosState.Algo_Claster ?? {};
+		// let arr = [
+			// [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			// [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+			// [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+			// [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]
+		// ]
+		// let mass = new Matrix();
+		// mass = arr;
+		// let Cl = new Algo_Claster(mass);
+		// console.log(Cl.k_means(4));
+		
+		let cursorPos = { x: 0, y: 0 };
+		let UCvs = new UCanvas(this.width, this.height);
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		UCvs.genGrid(40);
+		
+		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+		}.bind(UCvs, this);
+		
+		
+		let needUpdate = function(){
+			prevState.updater.call(this);
+		}.bind(this);
+		
+		let BrushSwitch = 'Brush';
+		let BrushColor = '#FFF';
+		let BrushSize = 20;
+		
+		let CalcAspect = function(x, y, repeat = false, rev = false){
+			let aspX = UCvs.width / this.width;
+			let aspY = UCvs.height / this.height;
+			
+			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
+			
+			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
+		}.bind(this);
+		
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { UCvs.startUndo(); setCursorPos(...e); });
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			if(e.buttons !== 1){ UCvs.endUndo(); return; }
+			
+			let aspX = UCvs.width / this.width;
+			let aspY = UCvs.height / this.height;
+			
+			switch(BrushSwitch){
+				case 'Brush':
+					if(UCvs.brushFillPoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor) !== false)
+						UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
+					break;
+					
+				case 'BrushStroke':
+					UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 4, BrushColor);
+					break;
+					
+				case 'BrushLine':
+					UCvs.brushLine(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor);
+					break;
+				
+				case 'Erase':
+					UCvs.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					break;
+			}
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); needUpdate(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); needUpdate(); return; }
+		};
+		
+		Config.setCtx('claster');
+		Config.add([
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.ChangerFPS,
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'horz',
+						on: {
+							text: {
+								input: function(e){
+									this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								},
+							},
+						},
+						child: [
+							{
+								type: 'text',
+								placeholder: 'Width',
+								id: 'conf-width',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'Height',
+								id: 'conf-height',
+								min: 0,
+							},
+						],
+					},
+					{
+						type: 'button',
+						value: 'Set',
+						on: { click: () => { UCvs.resize(parseInt($('#claster-conf-width').val()) || 400, parseInt($('#claster-conf-height').val()) || (400 / (this.width / this.height))); }, },
+					},
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Brush',
+					},
+					{
+						type: 'horz',
+						radio: 'Brush',
+						on: { radio: { click: function(){ BrushSwitch = this.value; }, }, },
+						child: [
+							{
+								type: 'radio',
+								value: 'Brush',
+								checked: true,
+							},
+							{
+								type: 'radio',
+								value: 'BrushStroke',
+							},
+							{
+								type: 'radio',
+								value: 'BrushLine',
+							},
+							{
+								type: 'radio',
+								value: 'Erase',
+							},
+						]
+					},
+					{
+						type: 'color',
+						value: '#ffffff',
+						
+						on: { input: function(){ BrushColor = this.value; }, },
+					},
+					{
+						type: 'range',
+						value: 'Size',
+						min: 1,
+						init: BrushSize,
+						max: 100,
+						on: { input: function(){ BrushSize = parseInt(this.value); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Grid Settings',
+					},
+					{ type: 'pad05em' },
+					{
+						type: 'range',
+						value: 'GridSize',
+						step: 1,
+						min: 1,
+						max: 100,
+						init: BrushSize * 2,
+						
+					},
+					{
+						type: 'checkbox',
+						value: 'Enable',
+					},
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						value: 'Undo',
+						on: { click: (e) => { UCvs.undo(); needUpdate(); }, },
+					},
+					{
+						type: 'button',
+						value: 'Redo',
+						on: { click: (e) => { UCvs.redo(); needUpdate(); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Algo Settings',
+					},
+					{ type: 'pad05em' },
+					{
+						radio: 'Cover',
+						type: 'horz',
+						child: [
+							{
+								type: 'radio',
+								value: 'k-means',
+							},
+							{
+								type: 'radio',
+								value: 'Agglomerative',
+							},
+						],
+					},
+					{
+						radio: 'Cover',
+						type: 'horz',
+						child: [
+							{
+								type: 'radio',
+								value: 'Connect Components',
+							},
+							{
+								type: 'radio',
+								value: 'Min Cover Tree',
+							},
+						],
+					},
+					{ type: 'pad05em' },
+					// {
+						// type: 'wrapper-vert',
+						// child: [
+							{
+								type: 'range',
+								value: 'Count Clasters',
+								step: 1,
+								min: 1,
+								max: 50,
+								init: 1,
+								
+								on: { click: (e) => { null; }, },
+							},
+							// {
+								// type: 'checkbox',
+								// value: 'enable',
+							// },
+						// ],
+					// },
+
+					{
+						type: 'range',
+						value: 'Max Dist',
+						step: 40,
+						min: 0,
+						max: Math.floor(Math.sqrt(this.width ** 2 + this.height ** 2)),
+						init: 300,
+						
+						on: { click: (e) => { null; }, },
+					},
+				],
+			},
+			// {
+				// type: 'wrapper-vert',
+				// child: [
+					// {
+						// type: 'text',
+						// placeholder: 'GridSize',
+						// id: 'conf-gridsize',
+						// min: 0,
+					// },
+					// {
+						// type: 'button',
+						// value: 'Set',
+						// on: { click: () => null, },
+					// },
+				// ]
+			// },
+			// {
+				// type: 'wrapper',
+				// child: [
+					// {
+						// type: 'file',
+						// value: 'loadImage',
+						// on: {
+							// input: (e) => {
+								// if(e.target.files){
+									// let img = new Image();
+									// img.onload = function(){ URL.revokeObjectURL(this.src); };
+									// img.src = URL.createObjectURL(e.target.files[0]);
+									
+									// this.onmclick = (e) => {
+										// Algo_Claster.brushImage(img, ...CalcAspect(e.offsetX,e.offsetY));
+										// $(this.ctx.canvas).off('Render:draw.loadImage');
+										// this.onmclick = null;
+									// };
+									
+									// $(this.ctx.canvas).off('Render:draw.loadImage');
+									// $(this.ctx.canvas).on('Render:draw.conf.loadImage', (e) => {
+										// let ctx = this.ctx;
+										
+										// let wh = CalcAspect(img.width, img.height, false, true);
+										
+										// let w = Math.floor(wh[0] / 2);
+										// let h = Math.floor(wh[1] / 2);
+										
+										// ctx.save();
+											// ctx.strokeStyle = 'green';
+											// ctx.strokeRect(cursorPos.x - w, cursorPos.y - h, wh[0], wh[1]);
+										// ctx.restore();
+									// });
+									
+									// e.target.value = '';
+								// }
+							// },
+						// },
+					// },
+				// ],
+			// },
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						class: 'col-HotPink',
+						value: '!!!WARGING!!!_____Clear_____!!!WARGING!!!',
+						on: {
+							click: (e) => { UCvs.clear(); needUpdate(); },
+						},
+					},
+				],
+			},
+		], 'main');
+		
+		let updater = UCvs.update();
+		updater = prevState.updater = prevState.updater ?? updater.next.bind(updater);
+		
+		this.ondraw = updater;
+		this.AlgosState.Algo_Claster = prevState;
 	}
 
 	genetics(){
@@ -189,18 +536,22 @@ export class CanvasRender{
 		console.log(Gen.matrix_adjacency);
 
 		console.log(Gen.genetic(point,4));
+		
+		
+		/*
+			Графика сюда
+		*/
 	}
 
 	ant(){
+		let prevState = this.AlgosState.Algo_Ant ?? {};
 		this._resetEvent();
 		
 		let cursorPos = { x: 0, y: 0 };
-		let Ant = this.AlgosState.Algo_Ant ?? new Algo_Ant(this.width, this.height);
+		let Ant = prevState.Ant = prevState.Ant ?? new Algo_Ant(this.width, this.height);
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
-		this.AlgosState.Algo_Ant = Ant;
-		
-		Ant.ondraw = function(render, deltaT, ctxImage){
+		Ant.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
@@ -218,9 +569,9 @@ export class CanvasRender{
 			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
 		}.bind(this);
 		
-		this.onmdown = setCursorPos;
-		this.onmenter = setCursorPos;
-		this.onmmove = function(e){
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? setCursorPos;
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
 			if(e.buttons !== 1) return;
 			let { x, y } = cursorPos;
 			
@@ -486,24 +837,33 @@ export class CanvasRender{
 							},
 							{ type: 'pad05em' },
 							{
-								type: 'horz',
-								radio: 'ALGO_PATH',
+								type: 'wrapper-vert',
 								child: [
 									{
-										type: 'radio',
-										value: '1',
-										checked: true,
-										
-										on: { click: (e) =>{ Ant.algo_path(1); } },
+										type: 'string',
+										value: 'MovType',
 									},
 									{
-										type: 'radio',
-										value: '2',
-										
-										on: { click: (e) =>{ Ant.algo_path(2); } },
+										type: 'horz',
+										radio: 'ALGO_PATH',
+										child: [
+											{
+												type: 'radio',
+												value: 'BoxType',
+												checked: true,
+												
+												on: { click: (e) =>{ Ant.algo_path(1); } },
+											},
+											{
+												type: 'radio',
+												value: 'TraceType',
+												
+												on: { click: (e) =>{ Ant.algo_path(2); } },
+											},
+										],
 									},
 								],
-							},
+							}
 						],
 					},
 					// {
@@ -550,6 +910,7 @@ export class CanvasRender{
 			// -Добавить изменения параметров для улия (кол-во муравьев)
 			// -Выполнить TODO в Ant_base:105
 			
+			Отталкивающий феромон для муравьев (ложить рядом со стенкой или с таким же феромоном (действует испарение))
 			Интенсивность еды (и Флаг бесконечная еда)
 			настройка отдельно муравья (радиус зоркости, частота феромоного следа (для каждого отдельно), скорости, частоты изменения движения)
 			общие настройки феромонов (испарение)
@@ -566,20 +927,21 @@ export class CanvasRender{
 		*/
 		
 		let updater = Ant.update();
+		updater = prevState.updater = prevState.updater ?? updater.next.bind(updater);
 		
-		this.ondraw = updater.next.bind(updater);
+		this.ondraw = updater;
+		this.AlgosState.Algo_Ant = prevState;
 	}
 	
 	nn(){
+		let prevState = this.AlgosState.Algo_NN ?? {};
 		this._resetEvent();
 		
 		let cursorPos = { x: 0, y: 0 };
-		let NN = this.AlgosState.Algo_NN ?? new Algo_NN(400, 400 / (this.width / this.height));
+		let NN = prevState.NN = prevState.NN ?? new Algo_NN(400, 400 / (this.width / this.height));
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
-		this.AlgosState.Algo_NN = NN;
-		
-		NN.ondraw = function(render, deltaT, ctxImage){
+		NN.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
@@ -601,6 +963,10 @@ export class CanvasRender{
 					ctx.lineTo(...CalcAspect(AABB[0], AABB[1], false, true));
 					ctx.stroke();
 				ctx.restore();
+				
+				// ctx.save();
+					// ctx.drawImage(ctx.canvas, 0, 0, ctxWidth / 2, ctxHeight / 2, ctxWidth / 2, ctxHeight / 2 , ctxWidth / 8, ctxHeight / 8);
+				// ctx.restore();
 				
 				let recognize = 'NN_DATA: [' + NN.NN(NN._grayscaleToLinear(processed.data)) + ']';
 				
@@ -624,7 +990,7 @@ export class CanvasRender{
 			
 			switch(mode){
 				case 'realtime':
-					this.ondraw = updater;
+					this.ondraw = prevState.updater;
 					break;
 					
 				case 'mousemove':
@@ -637,7 +1003,7 @@ export class CanvasRender{
 		
 		let needUpdate = function(){
 			if(UpdateMode != 'realtime')
-				updater.call(this);
+				prevState.updater.call(this);
 		}.bind(this);
 		
 		let BrushSwitch = 'Brush';
@@ -653,9 +1019,9 @@ export class CanvasRender{
 			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
 		}.bind(this);
 		
-		this.onmdown = (...e) => { NN.startUndo(); setCursorPos(...e); };
-		this.onmenter = setCursorPos;
-		this.onmmove = function(e){
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { NN.startUndo(); setCursorPos(...e); });
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
 			let { x, y } = cursorPos;
 			
 			setCursorPos(e);
@@ -679,11 +1045,11 @@ export class CanvasRender{
 			e.stopPropagation();
 			
 			if(UpdateMode == 'mousemove')
-				updater.call(this);
+				prevState.updater.call(this);
 		};
-		this.onkeydown = function(e){
-			if(e.ctrlKey && e.key == 'z'){ NN.undo(); needUpdate(); return; }
-			if(e.ctrlKey && e.key == 'y'){ NN.redo(); needUpdate(); return; }
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ NN.undo(); needUpdate(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ NN.redo(); needUpdate(); return; }
 		};
 		
 		Config.setCtx('nn');
@@ -799,7 +1165,7 @@ export class CanvasRender{
 					{
 						type: 'button',
 						value: 'Update',
-						on: { click: (e) => updater.call(this), },
+						on: { click: (e) => prevState.updater.call(this), },
 					},
 				],
 			},
@@ -897,15 +1263,16 @@ export class CanvasRender{
 			// -загрузки изображения для распознования, сохранить изображение
 			
 			распознование нескольких цифр \
-			
+			ЛГБТ Кисточка
 			
 			// Нейросеть конфигурация в пиксельный режим
 		*/
 		
-		let updater = NN.update();
-		updater = updater.next.bind(updater);
+		let updater = NN.update()
+		updater = prevState.updater = prevState.updater ?? updater.next.bind(updater);
 		
 		this.ondraw = updater;
+		this.AlgosState.Algo_NN = prevState;
 	}
 	
 	_drawFps(deltaT, ctx){

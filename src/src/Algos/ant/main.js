@@ -7,7 +7,7 @@ import { Marker_home } from './simulator/entity/Marker_home.js';
 import { Wall } from './simulator/entity/Wall.js';
 import { Colony } from './simulator/entity/Colony.js';
 import { Vector } from '../_helpers/Vector.js';
-import { Figure } from './simulator/Figure.js';
+import { Figure } from '../_helpers/Figure.js';
 
 export class Algo_Ant{
 	constructor(width, height){

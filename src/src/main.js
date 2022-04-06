@@ -32,6 +32,7 @@ $(function(){
 		В хеадер добавить реквизиты для донатов (bitcoin, yandex, qiwi)
 	*/
 	
-	$('[data-algo="ant"]').click();
+	// $('[data-algo="ant"]').click();
 	// $('[data-algo="nn"]').click();
+	$('[data-algo="claster"]').click();
 });
