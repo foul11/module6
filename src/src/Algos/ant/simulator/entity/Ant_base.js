@@ -33,7 +33,7 @@ export class Ant_base extends Entity_base{
 		this.hasFood = false;
 		this.intesivity = 1;
 		// this.degradeteIntesivity = 0.99;
-		this.degradeteIntesivity = 0.005;
+		this.degradeteIntesivity = 0.1;
 		this.timer = 0;
 		
 		this.size = new Vector(10, 3).mul(2);

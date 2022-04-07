@@ -18,6 +18,26 @@ export class Algo_Genetics {
         this.onend = null;
         this.ondraw = null;
     }
+	
+	// *update(start_point){
+		// if(this.onstart instanceof Function)
+			// this.onstart.call(this)();
+		
+		// let deltaT = 0;
+		
+		// while(true){
+			// let ctx = this.offscreenBuffering;
+			
+			
+			// if(this.ondraw instanceof Function)
+				// this.ondraw.call(this, deltaT, ctx);
+			
+			// deltaT = yield;
+		// }
+		
+		// if(this.onend instanceof Function)
+			// this.onend.call(this);
+	// }
 
     genetic(start_point) {//основной алгоритм
         let population_size = (this.points.length - 1) ** 2;

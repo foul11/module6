@@ -17,6 +17,10 @@ export class UCanvas{
 	
 	static #draw_id = 0;
 	
+	/*
+		TODO: Обьект квадрата и отутлайн квадрата
+	*/
+	
 	constructor(width, height){
 		// this.onstart = null;
 		// this.onend = null;
@@ -45,6 +49,8 @@ export class UCanvas{
 		
 		this.grid = { x: 1, y: 1 };
 		this.isDrawGrid = false;
+		this.gridColor = '#FFF';
+		this.gridWidth = 1;
 	}
 	
 	// _refillMap(width, height){
@@ -87,6 +93,9 @@ export class UCanvas{
 				// for(let i in this.currUndo)
 					// this._draw(ctx, this.currUndo[i]);
 				
+				if(this.isDrawGrid)
+					this._draw_grid(ctx, this.grid, this.gridColor, this.gridWidth);
+				
 				this._cumbacker(function(i, j, obj){
 					this._draw(ctx, obj);
 				});
@@ -121,6 +130,33 @@ export class UCanvas{
 		
 		if(lineRound)
 			this[propB + pref].lineCap = 'round';
+	}
+	
+	_draw_grid(ctx, size, color = '#FFF', width = 1){
+		ctx.save();
+			
+			ctx.lineWidth = width;
+			ctx.strokeStyle = color;
+			
+			for(let i = 0; i < this.width; i += size.x){
+				let x = Math.round(i / size.x) * size.x + size.x / 2;
+				
+				ctx.beginPath();
+					ctx.moveTo(x, 0);
+					ctx.lineTo(x, this.height);
+				ctx.stroke();
+			}
+			
+			for(let i = 0; i < this.width; i += size.y){
+				let y = Math.round(i / size.y) * size.y + size.y / 2;
+				
+				ctx.beginPath();
+					ctx.moveTo(0, y);
+					ctx.lineTo(this.width, y);
+				ctx.stroke();
+			}
+			
+		ctx.restore();
 	}
 	
 	_draw(ctx, parm){
@@ -370,6 +406,14 @@ export class UCanvas{
 		this.isDrawGrid = bool;
 	}
 	
+	setColorGrid(color){
+		this.gridColor = color;
+	}
+	
+	setWidthGrid(width){
+		this.gridWidth = width;
+	}
+	
 	// getOut(){}
 	
 	// setUndo(undos){
@@ -401,8 +445,14 @@ export class UCanvas{
 		// }
 	}
 	
-	resize(width, height){
+	resize(width, height){ /* TODO: delete object without screen */
+		let grid = this.grid;
+		let isDrawGrid = this.isDrawGrid;
+		
 		this.init(width, height);
+		
+		this.grid = grid;
+		this.isDrawGrid = isDrawGrid;
 	}
 	
 	clear(){

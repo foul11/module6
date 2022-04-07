@@ -255,6 +255,8 @@ export class CanvasRender{
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
 		UCvs.genGrid(40);
+		UCvs.setDrawGrid(true);
+		UCvs.setColorGrid('#555');
 		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
@@ -271,7 +273,7 @@ export class CanvasRender{
 		
 		let BrushSwitch = 'Brush';
 		let BrushColor = '#FFF';
-		let BrushSize = 20;
+		let BrushSize = 15;
 		
 		let CalcAspect = function(x, y, repeat = false, rev = false){
 			let aspX = UCvs.width / this.width;
@@ -298,14 +300,6 @@ export class CanvasRender{
 				case 'Brush':
 					if(UCvs.brushFillPoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor) !== false)
 						UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
-					break;
-					
-				case 'BrushStroke':
-					UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 4, BrushColor);
-					break;
-					
-				case 'BrushLine':
-					UCvs.brushLine(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor);
 					break;
 				
 				case 'Erase':
@@ -359,7 +353,7 @@ export class CanvasRender{
 					{
 						type: 'button',
 						value: 'Set',
-						on: { click: () => { UCvs.resize(parseInt($('#claster-conf-width').val()) || 400, parseInt($('#claster-conf-height').val()) || (400 / (this.width / this.height))); }, },
+						on: { click: () => { UCvs.resize(parseInt($('#claster-conf-width').val()) || this.width, parseInt($('#claster-conf-height').val()) || this.height); }, },
 					},
 				]
 			},
@@ -379,14 +373,6 @@ export class CanvasRender{
 								type: 'radio',
 								value: 'Brush',
 								checked: true,
-							},
-							{
-								type: 'radio',
-								value: 'BrushStroke',
-							},
-							{
-								type: 'radio',
-								value: 'BrushLine',
 							},
 							{
 								type: 'radio',
@@ -421,15 +407,43 @@ export class CanvasRender{
 					{
 						type: 'range',
 						value: 'GridSize',
+						id: 'grid-size',
 						step: 1,
 						min: 1,
 						max: 100,
 						init: BrushSize * 2,
 						
+						on: { input: function(){ UCvs.genGrid(parseInt(this.value)); } },
+					},
+					{
+						type: 'range',
+						value: 'GridWidth',
+						step: 1,
+						min: 1,
+						max: 10,
+						init: 1,
+						
+						on: { input: function(){ UCvs.setWidthGrid(parseInt(this.value)); } },
+					},
+					{
+						type: 'color',
+						value: '#555555',
+						
+						on: { input: function(){ UCvs.setColorGrid(this.value); }, },
 					},
 					{
 						type: 'checkbox',
-						value: 'Enable',
+						value: 'Draw enable',
+						checked: true,
+						
+						on: { click: function(){ UCvs.setDrawGrid(this.checked); } },
+					},
+					{
+						type: 'checkbox',
+						value: 'Grid enable',
+						checked: true,
+						
+						on: { click: function(){ UCvs.setDrawGrid(this.checked); UCvs.genGrid(this.checked ? parseInt($('#claster-grid-size').val()) : 1); } },
 					},
 				],
 			},
@@ -457,30 +471,37 @@ export class CanvasRender{
 					},
 					{ type: 'pad05em' },
 					{
+						type: 'vert',
 						radio: 'Cover',
-						type: 'horz',
+						
+						on: { click: (e) => { console.log('set Algo (not WORK) ' + e.target.value); } }, /* TODO: write change method */
 						child: [
 							{
-								type: 'radio',
-								value: 'k-means',
+								type: 'horz',
+								child: [
+									{
+										type: 'radio',
+										value: 'k-means',
+										checked: true,
+									},
+									{
+										type: 'radio',
+										value: 'Agglomerative',
+									},
+								],
 							},
 							{
-								type: 'radio',
-								value: 'Agglomerative',
-							},
-						],
-					},
-					{
-						radio: 'Cover',
-						type: 'horz',
-						child: [
-							{
-								type: 'radio',
-								value: 'Connect Components',
-							},
-							{
-								type: 'radio',
-								value: 'Min Cover Tree',
+								type: 'horz',
+								child: [
+									{
+										type: 'radio',
+										value: 'Connect Components',
+									},
+									{
+										type: 'radio',
+										value: 'Min Cover Tree',
+									},
+								],
 							},
 						],
 					},
@@ -517,63 +538,6 @@ export class CanvasRender{
 					},
 				],
 			},
-			// {
-				// type: 'wrapper-vert',
-				// child: [
-					// {
-						// type: 'text',
-						// placeholder: 'GridSize',
-						// id: 'conf-gridsize',
-						// min: 0,
-					// },
-					// {
-						// type: 'button',
-						// value: 'Set',
-						// on: { click: () => null, },
-					// },
-				// ]
-			// },
-			// {
-				// type: 'wrapper',
-				// child: [
-					// {
-						// type: 'file',
-						// value: 'loadImage',
-						// on: {
-							// input: (e) => {
-								// if(e.target.files){
-									// let img = new Image();
-									// img.onload = function(){ URL.revokeObjectURL(this.src); };
-									// img.src = URL.createObjectURL(e.target.files[0]);
-									
-									// this.onmclick = (e) => {
-										// Algo_Claster.brushImage(img, ...CalcAspect(e.offsetX,e.offsetY));
-										// $(this.ctx.canvas).off('Render:draw.loadImage');
-										// this.onmclick = null;
-									// };
-									
-									// $(this.ctx.canvas).off('Render:draw.loadImage');
-									// $(this.ctx.canvas).on('Render:draw.conf.loadImage', (e) => {
-										// let ctx = this.ctx;
-										
-										// let wh = CalcAspect(img.width, img.height, false, true);
-										
-										// let w = Math.floor(wh[0] / 2);
-										// let h = Math.floor(wh[1] / 2);
-										
-										// ctx.save();
-											// ctx.strokeStyle = 'green';
-											// ctx.strokeRect(cursorPos.x - w, cursorPos.y - h, wh[0], wh[1]);
-										// ctx.restore();
-									// });
-									
-									// e.target.value = '';
-								// }
-							// },
-						// },
-					// },
-				// ],
-			// },
 			{
 				type: 'wrapper',
 				child: [
