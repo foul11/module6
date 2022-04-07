@@ -74,7 +74,10 @@ export class Algo_Genetics {
     }
 
     * genetic() {//основной алгоритм
-        let population_size = (this.points.length) ** 3;
+        this.points.sort(function (a, b) {
+            return a.id - b.id
+        });
+        let population_size = (this.points.length) ** 2;
         let index_fp = Math.floor(Math.random() * this.points.length);//индекс стартовой точки
         let population = [];
 
