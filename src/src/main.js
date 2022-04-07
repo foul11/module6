@@ -34,5 +34,6 @@ $(function(){
 	
 	// $('[data-algo="ant"]').click();
 	// $('[data-algo="nn"]').click();
-	$('[data-algo="claster"]').click();
+	// $('[data-algo="claster"]').click();
+	$('[data-algo="genetics"]').click();
 });

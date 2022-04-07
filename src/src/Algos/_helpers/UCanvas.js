@@ -25,6 +25,7 @@ export class UCanvas{
 		// this.onstart = null;
 		// this.onend = null;
 		
+		this.onpredraw = null;
 		this.ondraw = null;
 		
 		this.init(width, height);
@@ -81,6 +82,9 @@ export class UCanvas{
 				ctx.fillStyle = 'black';
 				ctx.fillRect(0, 0, this.width, this.height);
 			ctx.restore();
+			
+			if(this.onpredraw instanceof Function)
+				this.onpredraw.call(this, deltaT, ctx);
 			
 			ctx.save();
 				// for(let i = 0; i < this.Undo.length; i++){
@@ -213,6 +217,20 @@ export class UCanvas{
 		return '#' + format(255 - r) + format(255 - g) + format(255 - b);
 	}
 	
+	static hsv2rgb(h, s, v){
+		let f = (n, k = (n+h/60)%6) => v - v*s*Math.max(Math.min(k, 4-k, 1), 0);
+		let format = (n) => Math.floor(n * 255).toString(16).padStart(2, '0');
+		
+		return '#' + format(f(5)) + format(f(3)) + format(f(1));
+	}
+	
+	static rgb2hsv(r, g, b){
+		let v = Math.max(r, g, b), c = v - Math.min(r, g, b);
+		let h = c && ((v==r) ? (g-b)/c : ((v==g) ? 2+(b-r)/c : 4+(r-g)/c)); 
+		
+		return 'rgb(' + [60*(h<0?h+6:h), v&&c/v, v].join() + ')';
+	}
+	
 	/*setMode(mode){
 		this.currMode = mode;
 	}*/
@@ -321,8 +339,12 @@ export class UCanvas{
 		let ret = [];
 		
 		this._cumbacker(function(i, j, obj){
-			if(obj.type === type)
+			if(obj.type === type){
+				obj.x = obj.x1;
+				obj.y = obj.y1;
+				
 				ret.push(obj);
+			}
 		});
 		
 		return ret;
@@ -349,9 +371,9 @@ export class UCanvas{
 		[x1, y1] = this._tranposeCords(x1, y1);
 		
 		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
-		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, size: size, outSize: outSize, color: color, type: UCanvas.RECT.SPOINT });
+		this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, y1: y1, size: size, outSize: outSize, color: color, type: UCanvas.RECT.SPOINT });
 		
-		return true;
+		return UCanvas.#draw_id++;
 	}
 	
 	brushFillPoint(x1, y1, size, color, checkRad = true){
@@ -359,16 +381,18 @@ export class UCanvas{
 		[x1, y1] = this._tranposeCords(x1, y1);
 		
 		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
-		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, size: size, color: color, type: UCanvas.RECT.FPOINT });
+		this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, y1: y1, size: size, color: color, type: UCanvas.RECT.FPOINT });
 		
-		return true;
+		return UCanvas.#draw_id++;
 	}
 	
 	brushLine(x1, y1, x2, y2, size, color){
 		// [x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		[x1, x2, y1, y2] = this._tranposeCords(x1, x2, y1, y2);
 		
-		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: color, type: UCanvas.RECT.LINE });
+		this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: color, type: UCanvas.RECT.LINE });
+		
+		return UCanvas.#draw_id++;
 	}
 	
 	brushImage(img, x1, y1){
@@ -380,7 +404,9 @@ export class UCanvas{
 		if(this.currUndo.length)
 			this.endUndo();
 		
-		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, x2: w, y2: h, data: img, type: UCanvas.RECT.IMAGE });
+		this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, y1: y1, x2: w, y2: h, data: img, type: UCanvas.RECT.IMAGE });
+		
+		return UCanvas.#draw_id++;
 	}
 	
 	erase(x1, y1, x2, y2, size){
@@ -393,6 +419,10 @@ export class UCanvas{
 		});
 		
 		// this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: '#000', type: UCanvas.RECT.LINE });
+	}
+	
+	eraseId(id){
+		this.currUndo.push({ id: UCanvas.#draw_id++, delId: id, type: UCanvas.RECT.DELETE });
 	}
 	
 	genGrid(gx, gy = null){

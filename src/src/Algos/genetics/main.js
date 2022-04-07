@@ -1,45 +1,79 @@
 import {Matrix} from "../_helpers/Matrix";
 
 export class Algo_Genetics {
-    points = [];
+    // points = [];
     count_point = 0;
-    matrix_output = [];
+    // matrix_output = [];
     matrix_adjacency = [];
 
-    constructor(matrix) {
-        this.matrix_input = matrix;
-        this.width = matrix.length;
-        this.height = matrix[0].length;
-        this.matrix_output = new Matrix(matrix.length, matrix[0].length, 0);
-        this._search_points();
+    constructor(input /* matrix */) {
+        // this.matrix_input = matrix;
+        // this.width = matrix.length;
+        // this.height = matrix[0].length;
+        // this.matrix_output = new Matrix(matrix.length, matrix[0].length, 0);
+		this.points = input;
+		
+        // this._search_points();
         this._set_matrix_adjacency();
+		
+		this.iterateCount = 100;
 
         this.onstart = null;
         this.onend = null;
         this.ondraw = null;
     }
 	
-	// *update(start_point){
-		// if(this.onstart instanceof Function)
-			// this.onstart.call(this)();
+	*update(ctx){
+		if(this.onstart instanceof Function)
+			this.onstart.call(this);
 		
-		// let deltaT = 0;
+		let deltaT = 0;
+		let gen_algo_it = this.genetic();
+		let points;
 		
-		// while(true){
-			// let ctx = this.offscreenBuffering;
+		while(true){
+			let rnext = gen_algo_it.next();
 			
+			points = rnext.value ?? points;
 			
-			// if(this.ondraw instanceof Function)
-				// this.ondraw.call(this, deltaT, ctx);
+			for(let i = 0; i < points.length; i++){
+				let lastP;
+				
+				if(i === 0)
+					lastP = points[points.length - 1];
+				else
+					lastP = points[i - 1];
+				
+				ctx.save();
+					ctx.strokeStyle = '#ffa500';
+					ctx.lineWidth = 5;
+					ctx.beginPath();
+						ctx.moveTo(lastP.x, lastP.y);
+						ctx.lineTo(points[i].x, points[i].y);
+					ctx.stroke();
+				ctx.restore();
+			}
 			
-			// deltaT = yield;
-		// }
+			if(this.ondraw instanceof Function)
+				this.ondraw.call(this, deltaT, ctx);
+			
+			deltaT = yield;
+		}
 		
-		// if(this.onend instanceof Function)
-			// this.onend.call(this);
-	// }
+		if(this.onend instanceof Function)
+			this.onend.call(this);
+	}
+	
+	setIterateCount(val){
+		this.iterateCount = val;
+	}
+	
+	setInput(input){
+		this.points = input;
+		this._set_matrix_adjacency();
+	}
 
-    genetic() {//основной алгоритм
+    *genetic() {//основной алгоритм
         let population_size = (this.points.length - 1) ** 2;
         let index_fp = Math.floor(Math.random() * this.points.length);//индекс стартовой точки
         let population = [];
@@ -68,7 +102,7 @@ export class Algo_Genetics {
         }
         this._sort_population(population);
         let count_repeat = 0;
-        while (count_repeat < 100) {
+        while (count_repeat < this.iterateCount) {
             let descendants = [];
             let check = [];
             let parent1 = undefined;
@@ -114,10 +148,13 @@ export class Algo_Genetics {
             this.points.sort(function (a, b) {
                 return a.seq_num - b.seq_num
             });
+			
+			yield this.points;
             //вот тут надо забрать points, потому что нужно показать результат на каждой итерации цикла
         }
+		
         //return population[0];
-        return this.points;//точки отсортированы в порядке их обхода
+        // return this.points;//точки отсортированы в порядке их обхода
     }
 
     _crossover(parent1, parent2, descendants, flag) {//скрещивание

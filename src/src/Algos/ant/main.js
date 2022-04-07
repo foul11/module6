@@ -23,7 +23,7 @@ export class Algo_Ant{
 	
 	*update(){
 		if(this.onstart instanceof Function)
-			this.onstart.call(this)();
+			this.onstart.call(this);
 		
 		let deltaT = 0;
 		

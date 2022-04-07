@@ -561,30 +561,285 @@ export class CanvasRender{
 	}
 
 	genetics(){
-		let arr = [
-			[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		]
-		let mass = new Matrix();
-		mass = arr;
-		let point = {x:2, y:2};
-		let Gen = new Algo_Genetics(mass);
-		console.log(Gen.matrix_adjacency);
+		// let arr = [
+			// [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		// ]
+		// let mass = new Matrix();
+		// mass = arr;
+		// let point = {x:2, y:2};
+		// let Gen = new Algo_Genetics(mass);
+		// console.log(Gen.matrix_adjacency);
 
-		console.log(Gen.genetic(point,4));
+		// console.log(Gen.genetic(point,4));
 		
 		
-		/*
-			Графика сюда
-		*/
+		let prevState = this.AlgosState.Algo_Genetics ?? {};
+		
+		let cursorPos = { x: 0, y: 0 };
+		let UCvs = new UCanvas(this.width, this.height);
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		UCvs.genGrid(40);
+		UCvs.setDrawGrid(true);
+		UCvs.setColorGrid('#555');
+		
+		let genetics = new Algo_Genetics([]);
+		let gupdater = null;
+		
+		UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
+			if(gupdater)
+				if(gupdater.next(deltaT).done)
+					gupdater = null;
+		}.bind(UCvs, this);
+		
+		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+		}.bind(UCvs, this);
+		
+		
+		let needUpdate = function(){
+			prevState.updater.call(this);
+		}.bind(this);
+		
+		let BrushSwitch = 'Brush';
+		let BrushColor = '#FFF';
+		let BrushSize = 15;
+		
+		let CalcAspect = function(x, y, repeat = false, rev = false){
+			let aspX = UCvs.width / this.width;
+			let aspY = UCvs.height / this.height;
+			
+			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
+			
+			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
+		}.bind(this);
+		
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { UCvs.startUndo(); setCursorPos(...e); });
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			if(e.buttons !== 1){ UCvs.endUndo(); return; }
+			
+			let aspX = UCvs.width / this.width;
+			let aspY = UCvs.height / this.height;
+			
+			switch(BrushSwitch){
+				case 'Brush':
+					if(UCvs.brushFillPoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor) !== false)
+						UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
+					break;
+				
+				case 'Erase':
+					UCvs.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					break;
+			}
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); needUpdate(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); needUpdate(); return; }
+		};
+		
+		Config.setCtx('genetics');
+		Config.add([
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.ChangerFPS,
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'horz',
+						on: {
+							text: {
+								input: function(e){
+									this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								},
+							},
+						},
+						child: [
+							{
+								type: 'text',
+								placeholder: 'Width',
+								id: 'conf-width',
+								min: 0,
+							},
+							{
+								type: 'text',
+								placeholder: 'Height',
+								id: 'conf-height',
+								min: 0,
+							},
+						],
+					},
+					{
+						type: 'button',
+						value: 'Set',
+						on: { click: () => { UCvs.resize(parseInt($('#genetics-conf-width').val()) || this.width, parseInt($('#genetics-conf-height').val()) || this.height); }, },
+					},
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Brush',
+					},
+					{
+						type: 'horz',
+						radio: 'Brush',
+						on: { radio: { click: function(){ BrushSwitch = this.value; }, }, },
+						child: [
+							{
+								type: 'radio',
+								value: 'Brush',
+								checked: true,
+							},
+							{
+								type: 'radio',
+								value: 'Erase',
+							},
+						]
+					},
+					{
+						type: 'color',
+						value: '#ffffff',
+						
+						on: { input: function(){ BrushColor = this.value; }, },
+					},
+					{
+						type: 'range',
+						value: 'Size',
+						min: 1,
+						init: BrushSize,
+						max: 100,
+						on: { input: function(){ BrushSize = parseInt(this.value); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Grid Settings',
+					},
+					{ type: 'pad05em' },
+					{
+						type: 'range',
+						value: 'GridSize',
+						id: 'grid-size',
+						step: 1,
+						min: 1,
+						max: 100,
+						init: BrushSize * 2,
+						
+						on: { input: function(){ UCvs.genGrid(parseInt(this.value)); } },
+					},
+					{
+						type: 'range',
+						value: 'GridWidth',
+						step: 1,
+						min: 1,
+						max: 10,
+						init: 1,
+						
+						on: { input: function(){ UCvs.setWidthGrid(parseInt(this.value)); } },
+					},
+					{
+						type: 'color',
+						value: '#555555',
+						
+						on: { input: function(){ UCvs.setColorGrid(this.value); }, },
+					},
+					{
+						type: 'checkbox',
+						value: 'Draw enable',
+						checked: true,
+						
+						on: { click: function(){ UCvs.setDrawGrid(this.checked); } },
+					},
+					{
+						type: 'checkbox',
+						value: 'Grid enable',
+						checked: true,
+						
+						on: { click: function(){ UCvs.setDrawGrid(this.checked); UCvs.genGrid(this.checked ? parseInt($('#genetics-grid-size').val()) : 1); } },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Algo Settings',
+					},
+					{
+						type: 'button',
+						value: 'start',
+						
+						on: { click: function(){ genetics.setInput(UCvs.getForType(UCanvas.RECT.FPOINT)); gupdater = genetics.update(UCvs.offscreenBuffering); } },
+					},
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						value: 'Undo',
+						on: { click: (e) => { UCvs.undo(); needUpdate(); }, },
+					},
+					{
+						type: 'button',
+						value: 'Redo',
+						on: { click: (e) => { UCvs.redo(); needUpdate(); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						class: 'col-HotPink',
+						value: '!!!WARGING!!!_____Clear_____!!!WARGING!!!',
+						on: {
+							click: (e) => { UCvs.clear(); needUpdate(); },
+						},
+					},
+				],
+			},
+		], 'main');
+		
+		let updater = UCvs.update();
+		updater = prevState.updater = prevState.updater ?? updater.next.bind(updater);
+		
+		this.ondraw = updater;
+		this.AlgosState.Algo_Genetics = prevState;
 	}
 
 	ant(){
