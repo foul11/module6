@@ -828,7 +828,7 @@ export class CanvasRender{
 						class: 'col-HotPink',
 						value: '!!!WARGING!!!_____Clear_____!!!WARGING!!!',
 						on: {
-							click: (e) => { UCvs.clear(); needUpdate(); },
+							click: (e) => { UCvs.clear(); gupdater = null; needUpdate(); },
 						},
 					},
 				],
