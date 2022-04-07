@@ -50,6 +50,8 @@ header{
 	width: 100%;
 	height: 100%;
 	
+	overflow: hidden;
+	
 	.algo_nav{
 		display: flex;
 		
@@ -107,7 +109,7 @@ header{
 	
 	canvas{
 		width: 100%;
-		max-height: 90vh;
+		max-height: calc(100vh - 7.5em); //90vh;
 		min-width: 25.5em;
 
 		aspect-ratio: 1;
@@ -118,6 +120,8 @@ header{
 	height: calc(100% - 2px);
 	
 	border: 1px solid grey;
+	
+	overflow-y: hidden;
 	
 	grid-area: conf;
 	
@@ -147,12 +151,35 @@ header{
 		}
 	}
 	
+	block{
+		width: 100%;
+		
+		padding: 0;
+		margin: 0;
+	}
+	
 	.inputs{
-		width: calc(100% - 0.75em * 2);
+		// width: calc(100% - 0.75em * 2);
 		height: calc(100% - 8.5em - 2px - 0.75em * 2);
 		
-		padding: 0.75em;
-		padding-top: 0.25em;
+		margin: 0.75em;
+		margin-right: 0.25em;
+		padding-right: 0.5em;
+		
+		overflow-y: auto;
+		
+		&::-webkit-scrollbar{
+			width: 1em;
+		}
+		
+		&::-webkit-scrollbar-button{
+			display: none;
+		}
+		
+		&::-webkit-scrollbar-track, &::-webkit-scrollbar-thumb{
+			box-shadow: inset 0 0 10px #0007;
+			border-radius: 0.5em;
+		}
 		
 		img{
 			width: 100%;
@@ -166,12 +193,43 @@ header{
 			font-size: 1.25em;
 			
 			padding: 0.25em;
-			margin-top: 0.5em;
+			margin-bottom: 0.5em;
 			
 			border: 1px dashed grey;
 			
 			*{
 				width: 100%;
+			}
+			
+			div{
+				box-sizing: border-box;
+				margin-bottom: 0;
+				font-size: 1em;
+			}
+			
+			@paddings: 1, 0.5, 0.25, 0.125;
+			
+			.for(@i, @n: length(@paddings)){
+				@val: extract(@paddings, @i);
+				@ruleN: replace(~"@{val}", '\.', '');
+				
+				.pad@{ruleN}em{
+					height: @val * 1em;
+				}
+			}
+			
+			@colors: IndianRed, LightCoral, Salmon, DarkSalmon, LightSalmon, Crimson, Red, FireBrick, DarkRed, Name, Pink, LightPink, HotPink, DeepPink, MediumVioletRed, PaleVioletRed, Name, LightSalmon, Coral, Tomato, OrangeRed, DarkOrange, Orange, Name, Gold, Yellow, LightYellow, LemonChiffon, LightGoldenrodYellow, PapayaWhip, Moccasin, PeachPuff, PaleGoldenrod, Khaki, DarkKhaki, Name, Lavender, Thistle, Plum, Violet, Orchid, Fuchsia, Magenta, MediumOrchid, MediumPurple, RebeccaPurple, BlueViolet, DarkViolet, DarkOrchid, DarkMagenta, Purple, Indigo, SlateBlue, DarkSlateBlue, MediumSlateBlue, Name, GreenYellow, Chartreuse, LawnGreen, Lime, LimeGreen, PaleGreen, LightGreen, MediumSpringGreen, SpringGreen, MediumSeaGreen, SeaGreen, ForestGreen, Green, DarkGreen, YellowGreen, OliveDrab, Olive, DarkOliveGreen, MediumAquamarine, DarkSeaGreen, LightSeaGreen, DarkCyan, Teal, Name, Aqua, Cyan, LightCyan, PaleTurquoise, Aquamarine, Turquoise, MediumTurquoise, DarkTurquoise, CadetBlue, SteelBlue, LightSteelBlue, PowderBlue, LightBlue, SkyBlue, LightSkyBlue, DeepSkyBlue, DodgerBlue, CornflowerBlue, MediumSlateBlue, RoyalBlue, Blue, MediumBlue, DarkBlue, Navy, MidnightBlue, Name, Cornsilk, BlanchedAlmond, Bisque, NavajoWhite, Wheat, BurlyWood, Tan, RosyBrown, SandyBrown, Goldenrod, DarkGoldenrod, Peru, Chocolate, SaddleBrown, Sienna, Brown, Maroon, Name, White, Snow, HoneyDew, MintCream, Azure, AliceBlue, GhostWhite, WhiteSmoke, SeaShell, Beige, OldLace, FloralWhite, Ivory, AntiqueWhite, Linen, LavenderBlush, MistyRose, Name, Gainsboro, LightGray, Silver, DarkGray, Gray, DimGray, LightSlateGray, SlateGray, DarkSlateGray, Black;
+			
+			.for(@i, @n: length(@colors)){
+				@val: extract(@colors, @i);
+				
+				&.col-@{val}, .col-@{val}{
+					color: @val;
+				}
+				
+				&.col-@{val}:after, .col-@{val}:after{
+					color: @val;
+				}
 			}
 			
 			.noWrapper{
@@ -210,6 +268,35 @@ header{
 			
 			span:empty{
 				margin: 0;
+			}
+			
+			input[type=color]{
+				-webkit-appearance: none;
+				height: 3.3em;
+				
+				background: #4d4d4d;
+				border: none;
+				padding: 0;
+				
+				&::-webkit-color-swatch-wrapper{
+					padding: 0;
+					
+					-webkit-mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3NSAzOCI+PGRlZnM+PHN0eWxlIHR5cGU9InRleHQvY3NzIj5AaW1wb3J0IHVybCgiLi4vZm9udHMvU2Fuc2l0YV9Td2FzaGVkLmNzcyIpOzwvc3R5bGU+PC9kZWZzPjx0ZXh0IHN0eWxlPSJmb250LXNpemU6IDMwcHg7IGZvbnQtZmFtaWx5OiAnU2Fuc2l0YSBTd2FzaGVkJywgY3Vyc2l2ZTsiPjx0c3BhbiB4PSIwIiB5PSIzMCI+Q29sb3I8L3RzcGFuPjwvdGV4dD48L3N2Zz4');
+					-webkit-mask-repeat: no-repeat;
+					-webkit-mask-position: center;
+				}
+
+				&::-webkit-color-swatch{
+					border: none;
+				}
+				
+				&:hover{
+					background: #5c607d;
+				}
+				
+				&:active{
+					background: #434354;
+				}
 			}
 			
 			input[type=range]{
@@ -259,23 +346,8 @@ header{
 				cursor: url('../img/cur_pointer_32.png'), pointer;
 			}
 			
-			input[type=checkbox]{
+			input[type=checkbox], input[type=radio]{
 				height: 3.3em;
-				margin: 0;
-			}
-			
-			// input[type=checkbox] + span{
-				// display: inline-block;
-				
-				// height: 1.5em;
-				// width: auto;
-				
-				// margin: 0 0.5em 0 0.5em;
-			// }
-			
-			input[type=radio]{
-				height: 3.30em;
-				
 				margin: 0;
 			}
 			
@@ -286,7 +358,7 @@ header{
 				border: none;
 			}
 			
-			input[type=radio], button, input[type=checkbox]{
+			input[type=radio], button, input[type=checkbox], input[type=file]{
 				&:after{
 					display: flex;
 					
@@ -320,6 +392,19 @@ header{
 				}
 			}
 			
+			input[type=file]{
+				height: 2.75rem;
+				font-size: 0;
+				
+				&::-webkit-file-upload-button {
+					display: none;
+				}
+				
+				&:after{
+					font-size: 1.25rem;
+				}
+			}
+			
 			input[type=text], input[type=number]{
 				height: 1.5em;
 				font-size: 1.5em;
@@ -332,6 +417,7 @@ header{
 				
 				cursor: url('../img/cur_text_32.png'), text;
 				
+				text-align: center;
 				color: white;
 				
 				&:active, &:hover, &:focus{
@@ -342,6 +428,10 @@ header{
 				&::-webkit-outer-spin-button,
 				&::-webkit-inner-spin-button{
 					display: none;
+				}
+				
+				&::-webkit-input-placeholder{
+					text-align: center;
 				}
 			}
 		}

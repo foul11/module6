@@ -1,5 +1,5 @@
 import { Vector } from '../../../_helpers/Vector.js';
-import { Figure } from '../Figure.js';
+import { Figure } from '../../../_helpers/Figure.js';
 import { Hit } from './Hit.js';
 
 export class World{
@@ -10,6 +10,14 @@ export class World{
 		
 		this.ondraw = null;
 		this.ondestruct = null;
+		
+		this.SCM = false;
+		
+		this.renderDisabled = [];
+		this.renderDisabledEnts = {};
+		
+		this.tickDisabled = [];
+		this.tickDisabledEnts = {};
 		
 		this.offscreenCanvas = document.createElement('canvas');
 		this.offscreenCanvas.width = width;
@@ -149,7 +157,7 @@ export class World{
 	}
 	
 	getByRange(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
-		let ret = [];
+		let gets = {};
 		
 		let { ceilRange, Scale, Maps } = this._SelectSearchParam(range, SearchMap);
 		let fPos = pos.div(Scale).floor();
@@ -161,17 +169,23 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i].getPos().dist(pos) <= range && objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
-						ret.push(objs[i]);
+					if(objs[i].getPos().dist(pos) <= range && objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
+						// ret.push(objs[i]);
+						gets[i] = objs[i];
 					}
 				}
 			}
+		
+		let ret = [];
+		
+		for(let k in gets)
+			ret.push(gets[k]);
 		
 		return ret;
 	}
 	
-	getByChuckPos(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
-		let ret = [];
+	getByChunkPos(pos, range = 1, filter = '', self = null, SearchMap = 'auto'){
+		let gets = {};
 		
 		let { ceilRange, Scale, Maps } = this._SelectSearchParam(range, SearchMap);
 		let fPos = pos.div(Scale).floor();
@@ -183,11 +197,17 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
-						ret.push(objs[i]);
+					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
+						// ret.push(objs[i]);
+						gets[i] = objs[i];
 					}
 				}
 			}
+		
+		let ret = [];
+		
+		for(let k in gets)
+			ret.push(gets[k]);
 		
 		return ret;
 	}
@@ -203,7 +223,7 @@ export class World{
 				let objs = Maps[x + fPos.x][y + fPos.y].inObj;
 				
 				for(let i in objs){
-					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '')){
+					if(objs[i] != self && (objs[i].constructor.name === filter || filter === '' || filter instanceof Object && objs[i] instanceof filter)){
 						return objs[i];
 					}
 				}
@@ -285,7 +305,7 @@ export class World{
 			let item = this.renderList[k];
 			
 			ctx.save();
-			item.render(deltaT, ctx, this.width, this.height);
+				item.render(deltaT, ctx, this.width, this.height);
 			ctx.restore();
 		}
 		
@@ -296,15 +316,104 @@ export class World{
 	}
 	
 	setEntityProp(Entity, opts = { draw: true, tick: true }){
-		if(opts.draw)
-			this.renderList[Entity.id] = Entity;
-		else
-			delete this.renderList[Entity.id];
+		let renderOffed = false;
+		let tickOffed = false;
 		
-		if(opts.tick)
-			this.tickList[Entity.id] = Entity;
-		else
-			delete this.tickList[Entity.id];
+		for(let i = 0; i < this.renderDisabled.length; i++){
+			if(Entity instanceof this.renderDisabled[i]){
+				renderOffed = true;
+				break;
+			}
+		}
+		
+		for(let i = 0; i < this.tickDisabled.length; i++){
+			if(Entity instanceof this.tickDisabled[i]){
+				tickOffed = true;
+				break;
+			}
+		}
+		
+		if(opts.draw !== undefined){
+			if(renderOffed){
+				if(opts.draw)
+					this.renderDisabledEnts[Entity.id] = Entity;
+				else
+					delete this.renderDisabledEnts[Entity.id];
+			}else{
+				if(opts.draw)
+					this.renderList[Entity.id] = Entity;
+				else
+					delete this.renderList[Entity.id];
+			}
+		}
+		
+		if(opts.tick !== undefined){
+			if(tickOffed){
+				if(opts.draw)
+					this.tickDisabledEnts[Entity.id] = Entity;
+				else
+					delete this.tickDisabledEnts[Entity.id];
+			}else{
+				if(opts.tick)
+					this.tickList[Entity.id] = Entity;
+				else
+					delete this.tickList[Entity.id];
+			}
+		}
+	}
+	
+	disableRenderer(EntityClass, opt = true){
+		if(opt){
+			this.renderDisabled.push(EntityClass);
+			
+			for(let k in this.renderList){
+				if(this.renderList[k] instanceof EntityClass){
+					this.renderDisabledEnts[k] = this.renderList[k];
+					delete this.renderList[k];
+				}
+			}
+		}else{
+			for(let i = 0; i < this.renderDisabled.length; i++){
+				if(this.renderDisabled[i] === EntityClass){
+					this.renderDisabled.splice(i, 1);
+					break;
+				}
+			}
+			
+			for(let k in this.renderDisabledEnts){
+				if(this.renderDisabledEnts[k] instanceof EntityClass){
+					this.renderList[k] = this.renderDisabledEnts[k];
+					delete this.renderDisabledEnts[k];
+				}
+			}
+		}
+	}
+	
+	disableTicker(EntityClass, opt = true){
+		if(opt){
+			this.tickDisabled.push(EntityClass);
+			
+			for(let k in this.tickList){
+				if(this.tickList[k] instanceof EntityClass){
+					this.tickDisabledEnts[k] = this.tickList[k];
+					delete this.tickList[k];
+				}
+			}
+		}else{
+			for(let i = 0; i < this.tickDisabled.length; i++){
+				if(this.tickDisabled[i] === EntityClass){
+					this.tickDisabled.splice(i, 1);
+					break;
+				}
+			}
+			
+			for(let k in this.tickDisabledEnts){
+				if(this.tickDisabledEnts[k] instanceof EntityClass){
+					this.tickList[k] = this.tickDisabledEnts[k];
+					delete this.tickDisabledEnts[k];
+				}
+			}
+		}
 	}
 	
 	tick(deltaT){

@@ -1,25 +1,26 @@
-const gulp = require('gulp')
-// const { exec } = require('child_process')
-const header = require('gulp-header')
-// const iconfont = require('gulp-iconfont')
-const less = require('gulp-less')
-// const cleanCSS = require('gulp-clean-css')
-// const uglify = require('gulp-uglify')
-// const concat = require('gulp-concat')
-const rename = require('gulp-rename')
-// const babel = require('gulp-babel')
+const gulp = require('gulp');
+// const { exec } = require('child_process');
+const header = require('gulp-header');
+// const iconfont = require('gulp-iconfont');
+const less = require('gulp-less');
+const pluginLessList = require('less-plugin-lists');
+// const cleanCSS = require('gulp-clean-css');
+// const uglify = require('gulp-uglify');
+// const concat = require('gulp-concat');
+const rename = require('gulp-rename');
+// const babel = require('gulp-babel');
 const compiler = require('webpack');
-const webpack = require('webpack-stream')
-// const replace = require('gulp-replace')
-// const replace = require('gulp-string-replace')
-const refresh = require('gulp-refresh')
+const webpack = require('webpack-stream');
+// const replace = require('gulp-replace');
+// const replace = require('gulp-string-replace');
+const refresh = require('gulp-refresh');
 const plumber = require('gulp-plumber');
 // const fail = require('gulp-fail');
 // const gulpIf = require('gulp-if');
-const del = require('del')
+const del = require('del');
 const comments = {
 	
-}
+};
 
 let tasks = {
 	// clean(cb){
@@ -33,22 +34,55 @@ let tasks = {
 		return gulp
 			.src(['src/less/*.less'])
 			.pipe(plumber())
-			.pipe(less())
+			.pipe(less({
+				plugins: [
+					new pluginLessList(),
+				],
+			}))
 			.pipe(gulp.dest('../css/'))
 			.pipe(refresh())
 	},
 	
 	build(cb){
-		return gulp.src('src/**/*.js')
+		delete require.cache[require.resolve('./config.js')];
+		let config = require('./config.js');
+		
+		return gulp.src(['src/**/*.js', '!src/**/_ignore/**/*'])
 			.pipe(plumber())
 			// .pipe(babel())
 			.pipe(webpack({
 				mode: 'development',
-				// experiments: {
+				experiments: {
+					asset: true,
 					// topLevelAwait: true
-				// },
+				},
 				output: {
 					filename: 'main.js',
+				},
+				
+				plugins: [
+					// new compiler.DefinePlugin({
+						// __CONFIG__: JSON.stringify(config),
+					// }),
+				],
+				
+				module: {
+					rules: [
+						{
+							// type: 'asset/source',
+							test: /.+\.weight/,
+							loader: 'arraybuffer-loader',
+						},
+						{
+							test: /.+\.js/,
+							use: [
+								{
+									loader: "ifdef-loader",
+									options: config,
+								},
+							],
+						},
+					],
 				},
 			}, compiler))
 			.pipe(header(`document.write('<script async src=\\"http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1\\"></' + 'script>'); `))
@@ -70,7 +104,7 @@ let tasks = {
 	watch(cb){
 		refresh.listen();
 		
-		gulp.watch(['src/**/*.js'], tasks.build);
+		gulp.watch(['src/**/*.js', '!src/**/_ignore/**/*', 'config.js'], tasks.build);
 		gulp.watch(['src/less/**/*.less'], tasks.less);
 		gulp.watch(['../index.html'], tasks.refresh);
 	}

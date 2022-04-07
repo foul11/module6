@@ -1,0 +1,428 @@
+import { Vector } from './Vector.js';
+import { Figure } from './Figure.js';
+
+export class UCanvas{
+	static MODES = {
+		VECT: 1,
+		// RAST: 2,
+	}
+	
+	static RECT = {
+		DELETE: 1,
+		SPOINT: 2,
+		FPOINT: 3,
+		LINE: 4,
+		IMAGE: 5,
+	}
+	
+	static #draw_id = 0;
+	
+	constructor(width, height){
+		// this.onstart = null;
+		// this.onend = null;
+		
+		this.ondraw = null;
+		
+		this.init(width, height);
+		
+		// this.MaxUndo = 100;
+		this.currMode = UCanvas.MODES.VECT;
+	}
+	
+	init(width, height){
+		this._createCanvas('', width, height, null, true);
+		// this._createCanvas('Perma', width, height, 'black', true);
+		
+		this.width = width;
+		this.height = height;
+		
+		// this._refillMap(width, height);
+		
+		this.Undo = [];
+		this.currUndo = [];
+		this.currUndoI = 0;
+		// this.UndoReset = [];
+		
+		this.grid = { x: 1, y: 1 };
+		this.isDrawGrid = false;
+	}
+	
+	// _refillMap(width, height){
+		// this.Map1 = [];
+		
+		// for(let x = 0; x < width; x++){
+			// this.Map1.push([])
+			// let Map1 = this.Map1[x];
+			
+			// for(let y = 0; y < height; y++){
+				// Map1.push({
+					// inObj: {},
+				// });
+			// }
+		// }
+	// }
+	
+	*update(){
+		if(this.onstart instanceof Function)
+			this.onstart.call(this)();
+		
+		let deltaT = 0;
+		
+		while(true){
+			let ctx = this.offscreenBuffering;
+			
+			ctx.save();
+				ctx.fillStyle = 'black';
+				ctx.fillRect(0, 0, this.width, this.height);
+			ctx.restore();
+			
+			ctx.save();
+				// for(let i = 0; i < this.Undo.length; i++){
+					// if(i >= this.currUndoI) continue;
+					
+					// for(let j in this.Undo[i])
+						// this._draw(ctx, this.Undo[i][j]);
+				// }
+				
+				// for(let i in this.currUndo)
+					// this._draw(ctx, this.currUndo[i]);
+				
+				this._cumbacker(function(i, j, obj){
+					this._draw(ctx, obj);
+				});
+			ctx.restore();
+			
+			if(this.ondraw instanceof Function)
+				this.ondraw.call(this, deltaT, ctx);
+			
+			deltaT = yield;
+		}
+		
+		if(this.onend instanceof Function)
+			this.onend.call(this);
+	}
+	
+	_createCanvas(pref, width, height, bg = null, lineRound = false){
+		let propC = 'offscreenCanvas';
+		let propB = 'offscreenBuffering';
+		
+		this[propC + pref] = document.createElement('canvas');
+		this[propC + pref].width = width;
+		this[propC + pref].height = height;
+		
+		this[propB + pref] = this[propC + pref].getContext('2d', { alpha: false });
+		
+		if(bg){
+			this[propB + pref].save();
+				this[propB + pref].fillStyle = bg;
+				this[propB + pref].fillRect(0, 0, this[propC + pref].width, this[propC + pref].height);
+			this[propB + pref].restore();
+		}
+		
+		if(lineRound)
+			this[propB + pref].lineCap = 'round';
+	}
+	
+	_draw(ctx, parm){
+		switch(parm.type){
+			case UCanvas.RECT.LINE:
+				ctx.strokeStyle = parm.color;
+				ctx.lineWidth = parm.size;
+				
+				ctx.beginPath();
+					ctx.moveTo(parm.x1, parm.y1);
+					ctx.lineTo(parm.x2, parm.y2);
+				ctx.stroke();
+				break;
+				
+			case UCanvas.RECT.SPOINT:
+				ctx.strokeStyle = parm.color;
+				ctx.lineWidth = parm.outSize;
+				
+				ctx.beginPath();
+					ctx.arc(parm.x1, parm.y1, parm.size, 0, 2 * Math.PI);
+				ctx.stroke();
+				break;
+				
+			case UCanvas.RECT.FPOINT:
+				ctx.fillStyle = parm.color;
+				
+				ctx.beginPath();
+					ctx.arc(parm.x1, parm.y1, parm.size, 0, 2 * Math.PI);
+				ctx.fill();
+				break;
+				
+			case UCanvas.RECT.IMAGE:
+				ctx.drawImage(parm.data, parm.x1 - parm.x2, parm.y1 - parm.y2);
+				break;
+		}
+	}
+	
+	static invertColor(hex){
+		if(hex.indexOf('#') === 0)
+			hex = hex.slice(1);
+			
+		if(hex.length === 3)
+			hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+		
+		if(hex.length !== 6)
+			throw new Error('Invalid HEX color.');
+		
+		let r = parseInt(hex.slice(0, 2), 16);
+		let g = parseInt(hex.slice(2, 4), 16);
+		let b = parseInt(hex.slice(4, 6), 16);
+		
+		let format = (n) => Math.floor(n).toString(16).padStart(2, '0');
+		
+		return '#' + format(255 - r) + format(255 - g) + format(255 - b);
+	}
+	
+	/*setMode(mode){
+		this.currMode = mode;
+	}*/
+	
+	_isOutMap(x, y){
+		return x < 0 || y < 0 || Math.floor(x) > (this.width - 1) || Math.floor(y) > (this.height - 1);
+	}
+	
+	_trace(x1, y1, size, callback = null){
+		let first = null;
+		
+		Figure.circle(x1, y1, size, function(x, y){
+			if(this._isOutMap(x, y)) return;
+			
+			if(callback instanceof Function){
+				for(let i in this.Map1[x][y].inObj){
+					callback.call(this, x, y, i, this.Map1[x][y].inObj[i]);
+				}
+			}else{
+				for(let item of this.Map1[x][y].inObj){
+					first = item;
+					return false;
+				}
+			}
+		}.bind(this));
+		
+		return first;
+	}
+	
+	// _deleteBrush(i, j, bool = true){
+		// if(i == -1){
+			// let reset = this.UndoReset['curr'] ?? [];
+			// reset[j] = bool;
+			// this.UndoReset['curr'] = reset;
+		// }else{
+			// let reset = this.UndoReset[i] ?? [];
+			// reset[j] = bool;
+			// this.UndoReset[i] = reset;
+		// }
+	// }
+	
+	_cumbacker(callback){
+		let draws = {};
+		
+		for(let i = 0; i < this.Undo.length; i++){
+			if(i >= this.currUndoI) continue;
+			
+			for(let j in this.Undo[i]){
+				let obj = this.Undo[i][j];
+				
+				if(obj.type === UCanvas.RECT.DELETE)
+					delete draws[obj.delId];
+				else
+					draws[obj.id] = { i: i, j: j, obj: obj };
+			}
+		}
+		
+		for(let i in this.currUndo){
+			let obj = this.currUndo[i];
+			
+			if(obj.type === UCanvas.RECT.DELETE)
+				delete draws[obj.delId];
+			else
+				draws[obj.id] = { i: -1, j: i, obj: obj };
+		}
+		
+		for(let i in draws){
+			let obj = draws[i];
+			callback.call(this, obj.i, obj.j, obj.obj);
+		}
+		
+		// for(let i = 0; i < this.Undo.length; i++){
+			// if(i >= this.currUndoI) continue;
+			
+			// let reset = this.UndoReset[i] ?? [];
+			
+			// for(let j in this.Undo[i]){
+				// if(!reset[j])
+					// if(callback.call(this, i, j, this.Undo[i][j]) === false)
+						// return;
+			// }
+		// }
+		
+		// let reset = this.UndoReset['curr'] ?? [];
+		
+		// for(let i in this.currUndo)
+			// if(!reset[i])
+				// if(callback.call(this, -1, i, this.currUndo[i]) === false)
+					// return;
+	}
+	
+	_checkRaduis(x1, y1, size){
+		let ret = false;
+		
+		this._cumbacker(function(i, j, obj){
+			if(Math.abs(obj.x1 - x1) + Math.abs(obj.y1 - y1) < (obj.size + size)){
+				ret = true;
+				return false;
+			}
+		});
+		
+		return ret;
+	}
+	
+	getForType(type){
+		let ret = [];
+		
+		this._cumbacker(function(i, j, obj){
+			if(obj.type === type)
+				ret.push(obj);
+		});
+		
+		return ret;
+	}
+	
+	_tranposeCords(p1, p2, p3 = null, p4 = null){
+		if(p3 && p4){
+			return [
+				Math.round(p1 / this.grid.x) * this.grid.x,
+				Math.round(p2 / this.grid.x) * this.grid.x,
+				Math.round(p3 / this.grid.y) * this.grid.y,
+				Math.round(p4 / this.grid.y) * this.grid.y,
+			];
+		}else{
+			return [
+				Math.round(p1 / this.grid.x) * this.grid.x,
+				Math.round(p2 / this.grid.y) * this.grid.y,
+			];
+		}
+	}
+	
+	brushStrokePoint(x1, y1, size, outSize, color, checkRad = true){
+		// [x1, y1] = [x1, y1].map((curr) => Math.floor(curr));
+		[x1, y1] = this._tranposeCords(x1, y1);
+		
+		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
+		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, size: size, outSize: outSize, color: color, type: UCanvas.RECT.SPOINT });
+		
+		return true;
+	}
+	
+	brushFillPoint(x1, y1, size, color, checkRad = true){
+		// [x1, y1] = [x1, y1].map((curr) => Math.floor(curr));
+		[x1, y1] = this._tranposeCords(x1, y1);
+		
+		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
+		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, size: size, color: color, type: UCanvas.RECT.FPOINT });
+		
+		return true;
+	}
+	
+	brushLine(x1, y1, x2, y2, size, color){
+		// [x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
+		[x1, x2, y1, y2] = this._tranposeCords(x1, x2, y1, y2);
+		
+		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: color, type: UCanvas.RECT.LINE });
+	}
+	
+	brushImage(img, x1, y1){
+		[x1, y1] = this._tranposeCords(x1, y1);
+		
+		let w = Math.floor(img.width / 2);
+		let h = Math.floor(img.height / 2);
+		
+		if(this.currUndo.length)
+			this.endUndo();
+		
+		this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, y1: y1, x2: w, y2: h, data: img, type: UCanvas.RECT.IMAGE });
+	}
+	
+	erase(x1, y1, x2, y2, size){
+		// [x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
+		[x1, x2, y1, y2] = this._tranposeCords(x1, x2, y1, y2);
+		
+		this._cumbacker(function(i, j, obj){
+			if(Math.abs(obj.x1 - x1) + Math.abs(obj.y1 - y1) < (obj.size + size))
+				this.currUndo.push({ id: UCanvas.#draw_id++, delId: obj.id, type: UCanvas.RECT.DELETE });
+		});
+		
+		// this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: '#000', type: UCanvas.RECT.LINE });
+	}
+	
+	genGrid(gx, gy = null){
+		if(gy === null) gy = gx;
+		
+		this.grid.x = gx;
+		this.grid.y = gy;
+	}
+	
+	setDrawGrid(bool){
+		this.isDrawGrid = bool;
+	}
+	
+	// getOut(){}
+	
+	// setUndo(undos){
+		// this.MaxUndo = undos;
+	// }
+	
+	startUndo(){
+		this.currUndo = [];
+	}
+	
+	endUndo(){
+		if(!this.currUndo.length) return;
+		
+		this.Undo[this.currUndoI++] = this.currUndo;
+		this.currUndo = [];
+		
+		// if(this.Undo.length > this.MaxUndo){
+			// let deleted = this.Undo.splice(0, 1);
+			// let ctx = this.offscreenBufferingPerma;
+			
+			// for(let i in deleted){
+				// ctx.save();
+					// for(let j in deleted[i])
+						// this._draw(ctx, deleted[i][j]);
+				// ctx.restore();
+				
+				// this.currUndoI--;
+			// }
+		// }
+	}
+	
+	resize(width, height){
+		this.init(width, height);
+	}
+	
+	clear(){
+		this._createCanvas('Perma', this.width, this.height, 'black', true);
+		
+		this.Undo = [];
+		this.currUndo = [];
+		this.currUndoI = 0;
+	}
+	
+	undo(){
+		if(this.currUndo.length)
+			this.endUndo();
+		
+		this.currUndoI--;
+		this.currUndoI = Math.max(this.currUndoI, 0);
+	}
+	
+	redo(){
+		this.currUndoI++;
+		this.currUndoI = Math.min(this.currUndoI, this.Undo.length);
+	}
+}

@@ -2,10 +2,12 @@ import { Entity_stackable } from './Entity_stackable.js';
 import { Vector } from '../../../_helpers/Vector.js';
 
 export class Marker extends Entity_stackable{
-	constructor(world, pos, chance, maxStack = 1, ...args){
-		super(world, pos, chance, maxStack, 2, ...args);
+	constructor(world, pos, chance, slice, minStack = 0, maxStack = 10, ...args){
+		super(world, pos, chance, slice, minStack, maxStack, 2, ...args);
+		
 		this.color = 240;
-		this.defaultDegradate = 0.25;
+		// this.defaultDegradate = 0.98;
+		this.defaultDegradate = 0.01;
 	}
 	
 	render(deltaT, ctx, width, height){
@@ -21,6 +23,7 @@ export class Marker extends Entity_stackable{
 	}
 	
 	tick(deltaT){
+		// this.stack *= this.defaultDegradate ** deltaT;
 		this.stack -= this.defaultDegradate * deltaT;
 		
 		super.tick(deltaT);

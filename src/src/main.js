@@ -1,6 +1,5 @@
 import { CanvasRender } from './Render.js';
-import { Matrix } from './Algos/_helpers/Matrix.js';
-// import { Config } from './Config.js';
+
 $(function(){
 	let canvas = $('#canvas_demo_algo');
 	let ctx = canvas[0].getContext('2d');
@@ -20,67 +19,20 @@ $(function(){
 		return false;
 	});
 	
-	/*Config.setConfig([
-		{
-			type: 'wrapper',
-			radio: 'da',
-			child: [
-				{
-					type: 'vert',
-					child: [
-						{
-							type: 'horz',
-							child: [
-								{
-									type: 'radio',
-									value: 'da',
-								},
-								{
-									type: 'radio',
-									value: 'agacb',
-								},
-							]
-						},
-						{
-							type: 'horz',
-							child: [
-								{
-									type: 'radio',
-								},
-								{
-									type: 'number',
-									placeholder: 'aga',
-								}
-							]
-						}
-					]
-				},
-				{
-					type: 'range',
-					value: 'd',
-					min: 0,
-					max: 100,
-					step: 1,
-					init: 25,
-					
-					on: {
-						// click: () => alert('agasb'),
-					}
-				}
-			]
-		},
-		{
-			type: 'wrapper',
-			child: [
-				{
-					type: 'text'
-				},
-			]
-		}
-	]);*/
+	render.hello();
 	
-	//render.hello();
-	render.genetics();
+	/*
+		//-В систему сборки добавить деверлопер (откл лоад скрин и веса получаются с сервера) и продакшен мод (сюда можно лоад скрины и сборку весов для нейронов)
+		
+		loadscreen с выбором режимов, 'анимешник' и 'мамка за спиной' (добавлять везде сенкроусед)
+		сделать уже эту шапку (можно добавить авторов, переключения режимов (сенскроусед), светлый режим)
+		Рефакторинг кода нейроки и муравьев
+		Сплит экрана
+		
+		В хеадер добавить реквизиты для донатов (bitcoin, yandex, qiwi)
+	*/
+	
 	// $('[data-algo="ant"]').click();
-	$('[data-algo="a_star"]').click();
+	// $('[data-algo="nn"]').click();
+	$('[data-algo="claster"]').click();
 });

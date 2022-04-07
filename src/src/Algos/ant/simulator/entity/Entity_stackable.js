@@ -3,23 +3,27 @@ import { Vector } from '../../../_helpers/Vector.js';
 
 export class Entity_stackable extends Entity_base{
 	
-	constructor(world, pos, chance = 0, maxStack = Infinity, stackRange = 5, ...args){
+	constructor(world, pos, chance = 0, slice = 1, minStack = 0, maxStack = Infinity, stackRange = 5, ...args){
 		if(pos === undefined) throw TypeError('pos is undefined');
 		
 		let ents = world.getByRange(pos, stackRange, new.target.name, null, 'Map16');
 		
 		if(Math.random() * 100 <= chance) return {};
+		if(slice < minStack) return {};
 		
 		/* if(ents.length > 1){
 			throw Error(new.target.name + ' not one from this pos ' + pos);
 		}else */ if(ents.length){
-			if(ents[0].stack < ents[0].maxStack)
-				ents[0].stack = Math.min(ents[0].stack + 1, ents[0].maxStack);
+			if(ents[0].stack < ents[0].maxStack){
+				ents[0].stack = Math.min(ents[0].stack + slice, ents[0].maxStack);
+				return ents[0];
+			}
 		}else{
 			super(world, pos, ...args);
 			
+			this.minStack = minStack;
 			this.maxStack = maxStack;
-			this.stack = 1;
+			this.stack = slice;
 			
 			return;
 		}
@@ -37,7 +41,7 @@ export class Entity_stackable extends Entity_base{
 	setPos(pos){}
 	
 	tick(deltaT){
-		if(this.stack <= 0)
+		if(this.stack <= this.minStack)
 			this.destruct();
 	}
 }

@@ -1,3 +1,6 @@
 /src/node_modules/**
 /src/package-lock.json
 /img/org/**
+/**/_ignore
+/js/main.js
+/css/main.css
