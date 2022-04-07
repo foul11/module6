@@ -19,14 +19,9 @@ export class Algo_Genetics {
         this.ondraw = null;
     }
 
-    genetic(start_point) {//основной алгоритм
+    genetic() {//основной алгоритм
         let population_size = (this.points.length - 1) ** 2;
-        let index_fp;
-        for (let i = 0; i < this.points.length; i++) {
-            if (start_point.x == this.points[i].x && start_point.y == this.points[i].y) {
-                index_fp = i;
-            }
-        }
+        let index_fp = Math.floor(Math.random() * this.points.length);//индекс стартовой точки
         let population = [];
         for (let i = 0; i < population_size; i++) {//генерируем популяцию
             population[i] = {
