@@ -1,4 +1,4 @@
-// #if __DEV__
+// #if __DEV__ && __NN_WEIGHT__
 	let xhr = new XMLHttpRequest();
 
 	xhr.onload  = function(){
@@ -379,6 +379,6 @@ export class Algo_NN{
 
 window.download = Algo_NN._download;
 
-// #if !__DEV__
+// #if !__DEV__ && __NN_WEIGHT__
 	Algo_NN.Model = require('./NN_50x50.weight');
 // #endif

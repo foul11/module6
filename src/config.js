@@ -1,5 +1,6 @@
 module.exports = {
 	__DEV__: true,
+	__NN_WEIGHT__: true,
 	
    "ifdef-verbose": true,                 // add this for verbose output
    "ifdef-triple-slash": false,           // add this to use double slash comment instead of default triple slash

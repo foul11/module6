@@ -618,9 +618,12 @@ export class CanvasRender{
 		let BrushColor = '#FFF';
 		let BrushSize = 15;
 		
-		let CalcAspect = function(x, y, repeat = false, rev = false){
-			let aspX = UCvs.width / this.width;
-			let aspY = UCvs.height / this.height;
+		let CalcAspect = function(cvs, x, y = null, repeat = false, rev = false){
+			let aspX = cvs.width / this.width;
+			let aspY = cvs.height / this.height;
+			
+			if(x instanceof Object)
+				y = x.y, x = x.x;
 			
 			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
 			
@@ -635,9 +638,6 @@ export class CanvasRender{
 			setCursorPos(e);
 			
 			if(e.buttons !== 1){ UCvs.endUndo(); return; }
-			
-			let aspX = UCvs.width / this.width;
-			let aspY = UCvs.height / this.height;
 			
 			switch(BrushSwitch){
 				case 'Brush':
@@ -1572,6 +1572,18 @@ export class CanvasRender{
 		
 		this.ondraw = updater;
 		this.AlgosState.Algo_NN = prevState;
+	}
+	
+	CAsp(cvs, x, y = null, repeat = false, rev = false){
+		let aspX = cvs.width / this.width;
+		let aspY = cvs.height / this.height;
+		
+		if(x instanceof Object)
+			y = x.y, x = x.x;
+		
+		if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
+		
+		return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
 	}
 	
 	_drawFps(deltaT, ctx){
