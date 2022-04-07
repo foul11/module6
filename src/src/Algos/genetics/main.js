@@ -11,72 +11,73 @@ export class Algo_Genetics {
         // this.width = matrix.length;
         // this.height = matrix[0].length;
         // this.matrix_output = new Matrix(matrix.length, matrix[0].length, 0);
-		this.points = input;
-		
+        this.points = input;
+
         // this._search_points();
         this._set_matrix_adjacency();
-		
-		this.iterateCount = 100;
+
+        this.iterateCount = 100;
 
         this.onstart = null;
         this.onend = null;
         this.ondraw = null;
     }
-	
-	*update(ctx){
-		if(this.onstart instanceof Function)
-			this.onstart.call(this);
-		
-		let deltaT = 0;
-		let gen_algo_it = this.genetic();
-		let points;
-		
-		while(true){
-			let rnext = gen_algo_it.next();
-			
-			points = rnext.value ?? points;
-			
-			for(let i = 0; i < points.length; i++){
-				let lastP;
-				
-				if(i === 0)
-					lastP = points[points.length - 1];
-				else
-					lastP = points[i - 1];
-				
-				ctx.save();
-					ctx.strokeStyle = '#ffa500';
-					ctx.lineWidth = 5;
-					ctx.beginPath();
-						ctx.moveTo(lastP.x, lastP.y);
-						ctx.lineTo(points[i].x, points[i].y);
-					ctx.stroke();
-				ctx.restore();
-			}
-			
-			if(this.ondraw instanceof Function)
-				this.ondraw.call(this, deltaT, ctx);
-			
-			deltaT = yield;
-		}
-		
-		if(this.onend instanceof Function)
-			this.onend.call(this);
-	}
-	
-	setIterateCount(val){
-		this.iterateCount = val;
-	}
-	
-	setInput(input){
-		this.points = input;
-		this._set_matrix_adjacency();
-	}
 
-    *genetic() {//основной алгоритм
-        let population_size = (this.points.length - 1) ** 2;
+    * update(ctx) {
+        if (this.onstart instanceof Function)
+            this.onstart.call(this);
+
+        let deltaT = 0;
+        let gen_algo_it = this.genetic();
+        let points;
+
+        while (true) {
+            let rnext = gen_algo_it.next();
+
+            points = rnext.value ?? points;
+
+            for (let i = 0; i < points.length; i++) {
+                let lastP;
+
+                if (i === 0)
+                    lastP = points[points.length - 1];
+                else
+                    lastP = points[i - 1];
+
+                ctx.save();
+                ctx.strokeStyle = '#ffa500';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(lastP.x, lastP.y);
+                ctx.lineTo(points[i].x, points[i].y);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (this.ondraw instanceof Function)
+                this.ondraw.call(this, deltaT, ctx);
+
+            deltaT = yield;
+        }
+
+        if (this.onend instanceof Function)
+            this.onend.call(this);
+    }
+
+    setIterateCount(val) {
+        this.iterateCount = val;
+    }
+
+    setInput(input) {
+        this.points = input;
+        this._set_matrix_adjacency();
+    }
+
+    * genetic() {//основной алгоритм
+        let population_size = (this.points.length) ** 3;
         let index_fp = Math.floor(Math.random() * this.points.length);//индекс стартовой точки
         let population = [];
+
         for (let i = 0; i < population_size; i++) {//генерируем популяцию
             population[i] = {
                 fp: index_fp,//начальная точка
@@ -101,8 +102,12 @@ export class Algo_Genetics {
             this._get_route_length(population[i]);
         }
         this._sort_population(population);
+
         let count_repeat = 0;
         while (count_repeat < this.iterateCount) {
+            this.points.sort(function (a, b) {
+                return a.id - b.id
+            });
             let descendants = [];
             let check = [];
             let parent1 = undefined;
@@ -114,6 +119,7 @@ export class Algo_Genetics {
             }
             while (count_use_parent < population.length) {
                 id_parent = Math.floor(Math.random() * population.length);
+
                 if (parent1 == undefined) {
                     if (check[id_parent] == 0) {
                         parent1 = population[id_parent];
@@ -130,11 +136,14 @@ export class Algo_Genetics {
                     }
                 }
             }
+
             for (let i = 0; i < descendants.length; i++) {
-                let flag1 = Math.floor(Math.random() * (population[0].route.length / 2));//Math.floor(Math.random() * (max - min)) + min
-                let flag2 = Math.floor(Math.random() * (population[0].route.length - (flag1 + 1))) + (flag1 + 1);
-                this._mutation(descendants[i], flag1, flag2);
+                let probability = Math.floor(Math.random() * 100);
+                if (probability < 30) {
+                    this._mutation(descendants[i]);
+                }
             }
+
             let best_route = population[0].route_length;
             this._selection(population, descendants);
 
@@ -148,13 +157,8 @@ export class Algo_Genetics {
             this.points.sort(function (a, b) {
                 return a.seq_num - b.seq_num
             });
-			
-			yield this.points;
-            //вот тут надо забрать points, потому что нужно показать результат на каждой итерации цикла
+            yield this.points;
         }
-		
-        //return population[0];
-        // return this.points;//точки отсортированы в порядке их обхода
     }
 
     _crossover(parent1, parent2, descendants, flag) {//скрещивание
@@ -172,7 +176,13 @@ export class Algo_Genetics {
             child1.route.push(parent1.route[i]);
             check[parent1.route[i]] = 1;
         }
-        for (let i = 0; i < parent1.route.length; i++) {
+        for (let i = flag; i < parent1.route.length; i++) {
+            if (check[parent2.route[i]] == 0) {
+                child1.route.push(parent2.route[i]);
+                check[parent2.route[i]] = 1;
+            }
+        }
+        for (let i = 0; i < flag; i++) {
             if (check[parent2.route[i]] == 0) {
                 child1.route.push(parent2.route[i]);
                 check[parent2.route[i]] = 1;
@@ -199,7 +209,13 @@ export class Algo_Genetics {
             child2.route.push(parent2.route[i]);
             check[parent2.route[i]] = 1;
         }
-        for (let i = 0; i < parent1.route.length; i++) {
+        for (let i = flag; i < parent1.route.length; i++) {
+            if (check[parent1.route[i]] == 0) {
+                child2.route.push(parent1.route[i]);
+                check[parent1.route[i]] = 1;
+            }
+        }
+        for (let i = 0; i < flag; i++) {
             if (check[parent1.route[i]] == 0) {
                 child2.route.push(parent1.route[i]);
                 check[parent1.route[i]] = 1;
@@ -209,7 +225,10 @@ export class Algo_Genetics {
         descendants.push(child2);
     }
 
-    _mutation(descendant, flag1, flag2) {//мутиция
+
+    _mutation(descendant) {//мутация
+        let flag1 = Math.floor(Math.random() * (descendant.route.length-2));//Math.floor(Math.random() * (max - min)) + min
+        let flag2 = Math.floor(Math.random() * (descendant.route.length - (flag1+1))) + (flag1+1);
         let temp;
         while (flag1 < flag2) {
             temp = descendant.route[flag1];
@@ -219,11 +238,20 @@ export class Algo_Genetics {
             flag2--;
         }
     }
-
+     /*
+    _mutation(descendant) {//мутиция
+        let temp;
+        let flag1 = Math.floor(Math.random() * descendant.length);
+        let flag2 = Math.floor(Math.random() * descendant.length);
+        temp = descendant[flag1];
+        descendant[flag1] = descendant[flag2];
+        descendant[flag2] = temp;
+    }
+    */
     _selection(population, descendants) {//селекция
         for (let i = 0; i < descendants.length; i++) {
             if (descendants[i].route_length < population[population.length - 1].route_length) {
-                population[population.length - 1].fp = descendants[i].fp;
+                //population[population.length - 1].fp = descendants[i].fp;
                 population[population.length - 1].route_length = descendants[i].route_length;
                 for (let j = 0; j < descendants[i].route.length; j++) {
                     population[population.length - 1].route[j] = descendants[i].route[j];
@@ -231,6 +259,7 @@ export class Algo_Genetics {
                 this._sort_population(population)
             }
         }
+        descendants = undefined;
         descendants = [];
     }
 
