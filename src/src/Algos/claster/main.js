@@ -88,15 +88,27 @@ export class Algo_Claster {
         return this.points;
     }
 
-    agglomerative(count_claster, max_dist) {//count_claster - количество , max_dist - порог расстояния (нужно передать один из них, второй пришли underfined)
+    agglomerative(count_claster) {//необязательный
+        if(count_claster==undefined){
+            count_claster=3;
+        }
+        for(let i=0;i<this.points.length;i++){
+            this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+        }
         return this.points;
     }
 
-    connect_components(max_dist){//max_dist - порог расстояния
+    connect_components(count_claster){
+        for(let i=0;i<this.points.length;i++){
+            this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+        }
         return this.points;
     }
 
-    min_cover_tree(count_claster, max_dist){//count_claster - количество , max_dist - порог расстояния (нужно передать один из них, второй пришли underfined)
+    min_cover_tree(count_claster){
+        for(let i=0;i<this.points.length;i++){
+            this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+        }
         return this.points;
     }
 	
