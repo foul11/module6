@@ -366,8 +366,16 @@ export class UCanvas{
 		}
 	}
 	
+	// brushStrokeBox(x1, y1, size, outSize, color, checkRad = true){\
+		// [x1, y1] = this._tranposeCords(x1, y1);
+		
+		// if(checkRad && this._checkRaduis(x1, y1, size)) return false;
+		// this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, y1: y1, size: size, outSize: outSize, color: color, type: UCanvas.RECT.SPOINT });
+		
+		// return UCanvas.#draw_id++;
+	// }
+	
 	brushStrokePoint(x1, y1, size, outSize, color, checkRad = true){
-		// [x1, y1] = [x1, y1].map((curr) => Math.floor(curr));
 		[x1, y1] = this._tranposeCords(x1, y1);
 		
 		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
@@ -377,7 +385,6 @@ export class UCanvas{
 	}
 	
 	brushFillPoint(x1, y1, size, color, checkRad = true){
-		// [x1, y1] = [x1, y1].map((curr) => Math.floor(curr));
 		[x1, y1] = this._tranposeCords(x1, y1);
 		
 		if(checkRad && this._checkRaduis(x1, y1, size)) return false;
@@ -387,7 +394,6 @@ export class UCanvas{
 	}
 	
 	brushLine(x1, y1, x2, y2, size, color){
-		// [x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		[x1, x2, y1, y2] = this._tranposeCords(x1, x2, y1, y2);
 		
 		this.currUndo.push({ id: UCanvas.#draw_id, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: color, type: UCanvas.RECT.LINE });
@@ -478,11 +484,15 @@ export class UCanvas{
 	resize(width, height){ /* TODO: delete object without screen */
 		let grid = this.grid;
 		let isDrawGrid = this.isDrawGrid;
+		let gridColor = this.gridColor;
+		let gridWidth = this.gridWidth;
 		
 		this.init(width, height);
 		
 		this.grid = grid;
 		this.isDrawGrid = isDrawGrid;
+		this.gridColor = gridColor;
+		this.gridWidth = gridWidth;
 	}
 	
 	clear(){

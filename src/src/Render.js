@@ -118,6 +118,7 @@ export class CanvasRender{
 	
 	a_star(){
 		let a_star = new Algo_a_star(new Matrix(this.width, this.height), this.width, this.height);
+		
 		a_star.ondraw = function(render, deltaT, out){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
@@ -130,7 +131,7 @@ export class CanvasRender{
 			ctx.restore();
 		}.bind(a_star, this);
 
-		Config.clear();
+		Config.setCtx('a_star');
 		Config.add([
 			{
 				type: 'wrapper-vert',
@@ -163,8 +164,8 @@ export class CanvasRender{
 						type: 'button',
 						value: 'Create maze',
 						on: { click: function(){
-							let width = parseInt($('#conf-width').val())+2;
-							let height = parseInt($('#conf-height').val())+2;
+							let width = parseInt($('#a_star-conf-width').val())+2;
+							let height = parseInt($('#a_star-conf-height').val())+2;
 							a_star.resize(new Matrix(width || this.width,  height|| this.height), width || this.width, height|| this.height);
 							a_star.labirint();},
 						},
@@ -214,10 +215,10 @@ export class CanvasRender{
 						type: 'button',
 						value: 'Find Put',
 						on: { click: function(){
-							let start_x = parseInt($('#start_x').val());
-							let start_y = parseInt($('#start_y').val()) ;
-							let end_x = parseInt($('#end_x').val());
-							let end_y = parseInt($('#end_y').val());
+							let start_x = parseInt($('#a_star-start_x').val());
+							let start_y = parseInt($('#a_star-start_y').val()) ;
+							let end_x = parseInt($('#a_star-end_x').val());
+							let end_y = parseInt($('#a_star-end_y').val());
 							a_star.algos_a_star(start_x, start_y, end_x, end_y)},
 						},
 					},
@@ -275,15 +276,6 @@ export class CanvasRender{
 		let BrushColor = '#FFF';
 		let BrushSize = 15;
 		
-		let CalcAspect = function(x, y, repeat = false, rev = false){
-			let aspX = UCvs.width / this.width;
-			let aspY = UCvs.height / this.height;
-			
-			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
-			
-			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
-		}.bind(this);
-		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { UCvs.startUndo(); setCursorPos(...e); });
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -293,17 +285,14 @@ export class CanvasRender{
 			
 			if(e.buttons !== 1){ UCvs.endUndo(); return; }
 			
-			let aspX = UCvs.width / this.width;
-			let aspY = UCvs.height / this.height;
-			
 			switch(BrushSwitch){
 				case 'Brush':
-					if(UCvs.brushFillPoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor) !== false)
-						UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
+					if(UCvs.brushFillPoint(...this.CAsp(UCvs, cursorPos), BrushSize, BrushColor) !== false)
+						UCvs.brushStrokePoint(...this.CAsp(UCvs, cursorPos), BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
 					break;
 				
 				case 'Erase':
-					UCvs.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					UCvs.erase(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos), BrushSize);
 					break;
 			}
 			
@@ -618,18 +607,6 @@ export class CanvasRender{
 		let BrushColor = '#FFF';
 		let BrushSize = 15;
 		
-		let CalcAspect = function(cvs, x, y = null, repeat = false, rev = false){
-			let aspX = cvs.width / this.width;
-			let aspY = cvs.height / this.height;
-			
-			if(x instanceof Object)
-				y = x.y, x = x.x;
-			
-			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
-			
-			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
-		}.bind(this);
-		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { UCvs.startUndo(); setCursorPos(...e); });
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -641,12 +618,12 @@ export class CanvasRender{
 			
 			switch(BrushSwitch){
 				case 'Brush':
-					if(UCvs.brushFillPoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor) !== false)
-						UCvs.brushStrokePoint(cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
+					if(UCvs.brushFillPoint(...this.CAsp(UCvs, cursorPos), BrushSize, BrushColor) !== false)
+						UCvs.brushStrokePoint(...this.CAsp(UCvs, cursorPos), BrushSize, BrushSize / 6, UCanvas.invertColor(BrushColor), false);
 					break;
 				
 				case 'Erase':
-					UCvs.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					UCvs.erase(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos), BrushSize);
 					break;
 			}
 			
@@ -861,13 +838,6 @@ export class CanvasRender{
 		let BrushSwitch = 'Walls';
 		let BrushSize = 10;
 		
-		let CalcAspect = function(x, y, repeat = false){
-			let aspX = Ant.world.width / this.width;
-			let aspY = Ant.world.height / this.height;
-			
-			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
-		}.bind(this);
-		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? setCursorPos;
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -876,24 +846,21 @@ export class CanvasRender{
 			
 			setCursorPos(e);
 			
-			let aspX = Ant.world.width / this.width;
-			let aspY = Ant.world.height / this.height;
-			
 			switch(BrushSwitch){
 				case 'Walls':
-					Ant.spawn(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, 'Wall');
+					Ant.spawn(...this.CAsp(Ant.world, x, y), ...this.CAsp(Ant.world, cursorPos), BrushSize, 'Wall');
 					break;
 					
 				case 'Food':
-					Ant.spawn(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, 'Food');
+					Ant.spawn(...this.CAsp(Ant.world, x, y), ...this.CAsp(Ant.world, cursorPos), BrushSize, 'Food');
 					break;
 					
 				case 'Erase':
-					Ant.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, '');
+					Ant.erase(...this.CAsp(Ant.world, x, y), ...this.CAsp(Ant.world, cursorPos), BrushSize, '');
 					break;
 					
 				case 'Marker_food':
-					Ant.spawn(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, 'Marker_food');
+					Ant.spawn(...this.CAsp(Ant.world, x, y), ...this.CAsp(Ant.world, cursorPos), BrushSize, 'Marker_food');
 					break;
 			}
 			
@@ -1119,7 +1086,7 @@ export class CanvasRender{
 								on: {
 									click: (e) => {
 										this.onmclick = (e) => {
-											Ant.spawn(...CalcAspect(e.offsetX,e.offsetY, true), 0, 'Colony');
+											Ant.spawn(...this.CAsp(Ant.world, e.offsetX, e.offsetY, true), 0, 'Colony');
 											this.onmclick = null;
 										};
 									},
@@ -1255,11 +1222,11 @@ export class CanvasRender{
 				ctx.save();
 					ctx.strokeStyle = 'red';
 					ctx.beginPath();
-					ctx.moveTo(...CalcAspect(AABB[0], AABB[1], false, true));
-					ctx.lineTo(...CalcAspect(AABB[2], AABB[1], false, true));
-					ctx.lineTo(...CalcAspect(AABB[2], AABB[3], false, true));
-					ctx.lineTo(...CalcAspect(AABB[0], AABB[3], false, true));
-					ctx.lineTo(...CalcAspect(AABB[0], AABB[1], false, true));
+					ctx.moveTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
+					ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[1], false, true));
+					ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[3], false, true));
+					ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[3], false, true));
+					ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
 					ctx.stroke();
 				ctx.restore();
 				
@@ -1309,15 +1276,6 @@ export class CanvasRender{
 		let BrushColor = '#FFF';
 		let BrushSize = 20;
 		
-		let CalcAspect = function(x, y, repeat = false, rev = false){
-			let aspX = NN.width / this.width;
-			let aspY = NN.height / this.height;
-			
-			if(rev) aspX = 1 / aspX, aspY = 1 / aspY;
-			
-			return repeat ? [x * aspX, y * aspY, x * aspX, y * aspY] : [x * aspX, y * aspY];
-		}.bind(this);
-		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => { NN.startUndo(); setCursorPos(...e); });
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -1327,16 +1285,13 @@ export class CanvasRender{
 			
 			if(e.buttons !== 1){ NN.endUndo(); return; }
 			
-			let aspX = NN.width / this.width;
-			let aspY = NN.height / this.height;
-			
 			switch(BrushSwitch){
 				case 'Brush':
-					NN.brush(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize, BrushColor);
+					NN.brush(...this.CAsp(NN, x, y), ...this.CAsp(NN, cursorPos), BrushSize, BrushColor);
 					break;
 				
 				case 'Erase':
-					NN.erase(x * aspX, y * aspY, cursorPos.x * aspX, cursorPos.y * aspY, BrushSize);
+					NN.erase(...this.CAsp(NN, x, y), ...this.CAsp(NN, cursorPos), BrushSize);
 					break;
 			}
 			
@@ -1513,7 +1468,7 @@ export class CanvasRender{
 									img.src = URL.createObjectURL(e.target.files[0]);
 									
 									this.onmclick = (e) => {
-										NN.brushImage(img, ...CalcAspect(e.offsetX,e.offsetY));
+										NN.brushImage(img, ...this.CAsp(NN, e.offsetX, e.offsetY));
 										$(this.ctx.canvas).off('Render:draw.loadImage');
 										this.onmclick = null;
 									};
@@ -1522,7 +1477,7 @@ export class CanvasRender{
 									$(this.ctx.canvas).on('Render:draw.conf.loadImage', (e) => {
 										let ctx = this.ctx;
 										
-										let wh = CalcAspect(img.width, img.height, false, true);
+										let wh = this.CalcAspect(NN, img.width, img.height, false, true);
 										
 										let w = Math.floor(wh[0] / 2);
 										let h = Math.floor(wh[1] / 2);
