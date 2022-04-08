@@ -36,6 +36,6 @@ $(function(){
 	// $('[data-algo="nn"]').click();
 	// $('[data-algo="claster"]').click();
 	// $('[data-algo="genetics"]').click();
-	// $('[data-algo="a_star"]').click();
-	$('[data-algo="test_UCanvas"]').click();
+	$('[data-algo="a_star"]').click();
+	// $('[data-algo="test_UCanvas"]').click();
 });

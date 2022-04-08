@@ -584,7 +584,7 @@ export class CanvasRender{
 						step: 1,
 						min: 1,
 						max: 50,
-						init: 1,
+						init: 3,
 						
 						on: { input: (e) => { StartClast(); }, },
 					},
