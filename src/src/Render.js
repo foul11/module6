@@ -167,7 +167,7 @@ export class CanvasRender{
 							let width = parseInt($('#a_star-conf-width').val())+2;
 							let height = parseInt($('#a_star-conf-height').val())+2;
 							a_star.resize(new Matrix(width || this.width,  height|| this.height), width || this.width, height|| this.height);
-							a_star.labirint();},
+							a_star.labirint_Prima();},
 						},
 					},
 				]
