@@ -74,7 +74,7 @@ export class Algo_Claster {
 	}
 
 	*k_means(count_claster) {//count_claster - количество кластеров
-		let matrix_output = new Matrix(this.width, this.height, 0);
+		// let matrix_output = new Matrix(this.width, this.height, 0);
 		let centre_claster = [];
 
 		for (let i = 0; i < count_claster; i++) {//выбор начальных центров
@@ -118,7 +118,7 @@ export class Algo_Claster {
 					}
 				}
 				if (centre_claster[i].x != Math.floor((min_x + max_x) / 2) || centre_claster[i].y != Math.floor((min_y + max_y) / 2)) {
-					matrix_output[centre_claster[i].x][centre_claster[i].y] = 0;
+					// matrix_output[centre_claster[i].x][centre_claster[i].y] = 0;
 					centre_claster[i].x = Math.floor((min_x + max_x) / 2);
 					centre_claster[i].y = Math.floor((min_y + max_y) / 2);
 					check = true;

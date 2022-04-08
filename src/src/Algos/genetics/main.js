@@ -147,10 +147,12 @@ export class Algo_Genetics {
 
 			for (let i = 0; i < descendants.length; i++) {
 				let probability = Math.floor(Math.random() * 100);
-				if (probability < 70) {
+				if (probability < 30) {
 					this._mutation(descendants[i]);
 				}
 			}
+			
+			this._sort_population(population);
 
 			let best_route = population[0].route_length;
 			this._selection(population, descendants);

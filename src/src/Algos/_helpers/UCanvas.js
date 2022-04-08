@@ -533,15 +533,18 @@ export class UCanvas{
 	}
 	
 	brushErase(x1, y1, x2, y2, size, check = UCanvas.CHECK.P2R){
-		// [x1, x2, y1, y2] = [x1, x2, y1, y2].map((curr) => Math.floor(curr));
 		[x1, x2, y1, y2] = this._tranposeCords(x1, x2, y1, y2);
 		
+		let ret = false;
+		
 		this._cumbacker(function(i, j, obj){
-			if(Math.abs(obj.x1 - x1) ** 2 + Math.abs(obj.y1 - y1) ** 2 < ((obj.size ?? 0) + size) ** 2)
+			if(Math.abs(obj.x1 - x1) ** 2 + Math.abs(obj.y1 - y1) ** 2 < ((obj.size ?? 0) + size) ** 2){
 				this.currUndo.push({ id: UCanvas.#draw_id++, delId: obj.id, type: UCanvas.RECT.DELETE });
+				ret = true;
+			}
 		});
 		
-		// this.currUndo.push({ id: UCanvas.#draw_id++, x1: x1, x2: x2, y1: y1, y2: y2, size: size, color: '#000', type: UCanvas.RECT.LINE });
+		return ret;
 	}
 	
 	eraseId(id){
@@ -588,6 +591,10 @@ export class UCanvas{
 	
 	setBrushColor(color){
 		this.brushColor = color;
+	}
+	
+	setArc(){
+		
 	}
 	
 	

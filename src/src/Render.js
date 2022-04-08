@@ -384,23 +384,6 @@ export class CanvasRender{
 
 	claster(){
 		let prevState = this.AlgosState.Algo_Claster ?? {};
-		// let arr = [
-			// [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			// [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-			// [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-			// [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-			// [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-			// [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-			// [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			// [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
-			// [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-			// [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]
-		// ]
-		// let mass = new Matrix();
-		// mass = arr;
-		// let Cl = new Algo_Claster(mass);
-		// console.log(Cl.k_means(4));
-		
 		
 		let cursorPos = { x: 0, y: 0 };
 		let UCvs = prevState.UCvs = prevState.UCvs ?? new UCanvas(this.width, this.height);
@@ -583,7 +566,7 @@ export class CanvasRender{
 						id: 'count-clasters',
 						step: 1,
 						min: 1,
-						max: 50,
+						max: 200,
 						init: 3,
 						
 						on: { input: (e) => { StartClast(); }, },
@@ -750,6 +733,15 @@ export class CanvasRender{
 					{
 						type: 'string',
 						value: 'Algo Settings',
+					},
+					{
+						type: 'range',
+						value: 'Generations',
+						min: 1,
+						init: genetics.iterateCount,
+						max: 10000,
+						
+						on: { input: function(e){ genetics.setIterateCount(parseInt(this.value)); } },
 					},
 					{
 						type: 'button',
