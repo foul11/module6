@@ -139,7 +139,8 @@ export class Algo_Claster {
 				}
 			}
 			*/
-			
+			//console.log(this.points);
+			console.log(centre_claster);
 			yield this.points;
 		}
 		
