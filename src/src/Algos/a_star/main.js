@@ -19,31 +19,22 @@ export class Algo_a_star{
 
 		this.queue = [];
 	}
-
 	
-
 	resize(Matrix, height, width){
 		this.walls = Matrix;
 		this.height = Number(height);
 		this.width = Number(width);
 	}
 
-	print_matrix(matrix = this.walls){
+	_print_matrix(matrix = this.walls){
 		for (let h = 0; h < this.height; h++){
 			let s = ''
-			for (let w = 0; w < this.width; w++){
+			
+			for (let w = 0; w < this.width; w++)
 				s += matrix[w][h] + ' ';
-			}
+			
 			console.log(s);
 		}
-
-		/*for (let i = 0; i < this.height; i++){
-			let s = '';
-			for (let j = 0; j < this.width; j++){
-				s += this.walls[j][i] + ' ';
-			}
-			console.log(s);
-		}*/
 	};
 	
 	*update(){
@@ -88,158 +79,7 @@ export class Algo_a_star{
 			this.onend.call(this);
 	}
 
-
-	
-	labirint() {
-		
-		for (let i = 0; i < this.height; i++){
-			for (let j = 0; j < this.width; j++){
-				this.walls[j][i] = true;
-			}
-		}
-
-		function getRandomInt(min, max) {
-			min = Math.ceil(min);
-			max = Math.floor(max);
-			return Math.floor(Math.random() * (max - min)) + min;
-		}
-
-		let x = getRandomInt(0, this.width/2) * 2 + 1;
-		let y = getRandomInt(0, this.height/2) * 2 + 1;
-		this.walls[x][y] = false;
-		
-		let to_check = new Array();
-
-		if (y-2 >= 0){
-			to_check.push(new Point(x, y - 2));
-		}
-		if (y + 2 < this.height){
-			to_check.push(new Point(x, y + 2));
-		}
-		if (x-2 >= 0){
-			to_check.push(new Point(x - 2, y));
-		}
-		if (x+2 < this.width){
-			to_check.push(new Point(x + 2, y));
-		}
-
-		while (to_check.length > 0){
-			let index = getRandomInt(0, to_check.length)
-			let cell = to_check[index];
-
-			let x = cell.w;
-			let y = cell.h;
-
-			this.walls[x][y] = false;
-			to_check.splice(index, 1);
-
-			let Direction = ['North', 'South', 'West', 'East'];
-
-			while (Direction.length > 0){
-				let dir_index = getRandomInt(0, Direction.length);
-				switch (Direction[dir_index]){
-					case 'North':
-						if (y - 2 >= 0 && !this.walls[x][y-2]){
-							this.walls[x][y-1] = false;
-							Direction.splice(0, Direction.length);
-						}
-						break;
-					case 'South':
-						if (y + 2 < this.height && !this.walls[x][y + 2]){
-							this.walls[x][y + 1] = false;
-							Direction.splice(0, Direction.length);
-						}
-						break;
-					case 'West':
-						if (x + 2 < this.width && !this.walls[x+2][y]){
-							this.walls[x + 1][y] = false;
-							Direction.splice(0, Direction.length);
-						}
-						break;
-					case 'East':
-						if (x - 2 >= 0 && !this.walls[x-2][y]){
-							this.walls[x - 1][y] = false;
-							Direction.splice(0, Direction.length);
-						}
-						break;
-				};
-
-				Direction.splice(dir_index, 1);
-			};
-
-			if (y - 2 >= 0 && this.walls[x][y-2]){
-				to_check.push(new Point(x, y - 2));
-			}
-			if (y + 2 < this.height && this.walls[x][y+2]){
-				to_check.push(new Point(x, y + 2));
-			}
-			if (x - 2 >= 0 && this.walls[x-2][y]){
-				to_check.push(new Point(x - 2, y));
-			}
-			if (x + 2 < this.width && this.walls[x+2][y]){
-				to_check.push(new Point(x + 2, y));
-			}
-		}
-
-		for (let i = 0; i < 4; i++){
-			let dead_ends = [];
-
-			for (let h = 0; h < this.height; h++){
-				for (let w = 0; w < this.width; w++){
-					if (!this.walls[w][h]){
-						let neighbors = 0;
-						if (h - 1 >= 0 && !this.walls[w][h-1]){
-							neighbors++;
-						}
-						if (h + 1 < this.height && !this.walls[w][h+1]){
-							neighbors++;
-						}
-						if (w - 1 >= 0 && !this.walls[w-1][h]){
-							neighbors++;
-						}
-						if (w + 1 < this.width && !this.walls[w+1][h]){
-							neighbors++;
-						}
-						
-						if (neighbors <= 1){
-							dead_ends.push(new Point(w, h));
-						}
-					}
-				}
-			}
-
-			for (let cell of dead_ends){
-				this.walls[cell.w][cell.h] = true;
-			}
-		}
-		
-		if (this.width % 2 === 0){
-			for (let cell = 0; cell < this.width; cell++){
-				this.walls[this.width - 1][cell] = true;
-				this.walls[cell][this.height - 1] = true;
-			}
-		}
-
-		for (let h = 0; h < this.height; h++){
-			for (let w = 0; w < this.width; w++){
-				if (this.walls[w][h]){
-					this.walls[w][h] = 1;
-				}
-				if (!this.walls[w][h]){
-					this.walls[w][h] = 0;
-				}
-			}
-		}
-
-		this.print_matrix(this.walls);
-
-		return this.walls;
-
-		this.queue.push({func: 'labirint', var: arguments});
-		
-	}
-
-	algos_a_star(start_x, start_y, end_x, end_y){
+	a_star(start_x, start_y, end_x, end_y){
 		let height = this.height;
 		let width = this.width;
 		let start = new Point(start_x, start_y);
@@ -254,13 +94,7 @@ export class Algo_a_star{
 				this.h = 0;  //эвристическое приближение стоимости пути от узла n до конечного узла
 				this.f = 0;  //минимальная стоимость перехода в соседний узел
 			}
-
-			/*_eq_(other){
-				return this.position === 
-			}*/
 		}
-
-		
 
 		function return_path(current_node, maze){
 			let path = [];
@@ -277,6 +111,7 @@ export class Algo_a_star{
 				path.push(current.position);
 				current = current.parent;
 			}
+			
 			path = path.reverse();
 			let start_val = 0;
 
@@ -296,6 +131,7 @@ export class Algo_a_star{
 			start_node.g = 0;
 			start_node.h = 0;
 			start_node.f = 0;
+			
 			end_node.g = 0;
 			end_node.h = 0;
 			end_node.f = 0;
@@ -325,8 +161,6 @@ export class Algo_a_star{
 					}
 				}
 
-				
-
 				if (outer_iterations > max_iterations){
 					return return_path(current_node, maze);
 				}
@@ -335,7 +169,7 @@ export class Algo_a_star{
 				visited_list.push(current_node);
 
 				if (current_node.position.w == end_node.position.w && current_node.position.h == end_node.position.h){
-					console.log(1);
+					console.log(1); /* Что это тут делает? */
 					return return_path(current_node, maze);
 				}
 
@@ -348,13 +182,11 @@ export class Algo_a_star{
 					let node_x = node_position.w;
 					let node_y = node_position.h;
 					
-					if (node_x > (width - 1) || node_x < 0 || node_y > (height - 1) || node_y < 0){
+					if (node_x > (width - 1) || node_x < 0 || node_y > (height - 1) || node_y < 0)
 						continue;
-					}
 
-					if (maze[node_x][node_y] !== 0){
+					if (maze[node_x][node_y] !== 0)
 						continue;
-					}
 
 					let new_node = new Node(current_node, node_position);
 
@@ -364,15 +196,12 @@ export class Algo_a_star{
 				for (let child of children){
 					let child_visited = [];
 
-					for (let visited_child of visited_list){
-						if (visited_child === child){
+					for (let visited_child of visited_list)
+						if (visited_child === child)
 							child_visited.push(visited_child);
-						}
-					}
 
-					if (child_visited.length > 0){
+					if (child_visited.length > 0)
 						continue;
-					}
 
 					child.g = current_node.g + cost;
 					
@@ -384,29 +213,172 @@ export class Algo_a_star{
 
 					let arr = [];
 
-					for (let i of yet_to_visit_list){
-						if (child === i && child.g > i.g){
-							arr.push(i);		
-						}
-					}
+					for (let i of yet_to_visit_list)
+						if (child === i && child.g > i.g)
+							arr.push(i);
 
-					if (arr.length > 0){
+					if (arr.length > 0)
 						continue;
-					}
 
 					yet_to_visit_list.push(child);
 				}
 			}
-
-			
 		}
 
 		let cost = 1;
 		let answer = search(this.walls, cost, start, end);
 
-		this.print_matrix(answer);		
+		this._print_matrix(answer);		
 
-		this.queue.push({func: 'algo', var: arguments});
+		this.queue.push({func: 'a_star', var: arguments});
+	}
+	
+	labirint_prima(){
+		for (let i = 0; i < this.height; i++)
+			for (let j = 0; j < this.width; j++)
+				this.walls[j][i] = true;
+
+		function getRandomInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+
+		let x = getRandomInt(0, this.width/2) * 2 + 1;
+		let y = getRandomInt(0, this.height/2) * 2 + 1;
+		
+		this.walls[x][y] = false;
+		
+		let to_check = [];
+
+		if (y-2 >= 0)
+			to_check.push(new Point(x, y - 2));
+		
+		if (y + 2 < this.height)
+			to_check.push(new Point(x, y + 2));
+		
+		if (x-2 >= 0)
+			to_check.push(new Point(x - 2, y));
+		
+		if (x+2 < this.width)
+			to_check.push(new Point(x + 2, y));
+
+		while (to_check.length > 0){
+			let index = getRandomInt(0, to_check.length)
+			let cell = to_check[index];
+
+			let x = cell.w;
+			let y = cell.h;
+
+			this.walls[x][y] = false;
+			to_check.splice(index, 1);
+
+			let Direction = ['North', 'South', 'West', 'East'];
+
+			while (Direction.length > 0){
+				let dir_index = getRandomInt(0, Direction.length);
+				
+				switch (Direction[dir_index]){
+					case 'North':
+						if (y - 2 >= 0 && !this.walls[x][y-2]){
+							this.walls[x][y-1] = false;
+							Direction.splice(0, Direction.length);
+						}
+						break;
+						
+					case 'South':
+						if (y + 2 < this.height && !this.walls[x][y + 2]){
+							this.walls[x][y + 1] = false;
+							Direction.splice(0, Direction.length);
+						}
+						break;
+						
+					case 'West':
+						if (x + 2 < this.width && !this.walls[x+2][y]){
+							this.walls[x + 1][y] = false;
+							Direction.splice(0, Direction.length);
+						}
+						break;
+						
+					case 'East':
+						if (x - 2 >= 0 && !this.walls[x-2][y]){
+							this.walls[x - 1][y] = false;
+							Direction.splice(0, Direction.length);
+						}
+						break;
+				};
+
+				Direction.splice(dir_index, 1);
+			}
+
+			if (y - 2 >= 0 && this.walls[x][y-2])
+				to_check.push(new Point(x, y - 2));
+			
+			if (y + 2 < this.height && this.walls[x][y+2])
+				to_check.push(new Point(x, y + 2));
+			
+			if (x - 2 >= 0 && this.walls[x-2][y])
+				to_check.push(new Point(x - 2, y));
+			
+			if (x + 2 < this.width && this.walls[x+2][y])
+				to_check.push(new Point(x + 2, y));
+			
+		}
+
+		for (let i = 0; i < 4; i++){
+			let dead_ends = [];
+
+			for (let h = 0; h < this.height; h++){
+				for (let w = 0; w < this.width; w++){
+					if (!this.walls[w][h]){
+						let neighbors = 0;
+						if (h - 1 >= 0 && !this.walls[w][h-1])
+							neighbors++;
+							
+						if (h + 1 < this.height && !this.walls[w][h+1])
+							neighbors++;
+						
+						if (w - 1 >= 0 && !this.walls[w-1][h])
+							neighbors++;
+						
+						if (w + 1 < this.width && !this.walls[w+1][h])
+							neighbors++;
+						
+						
+						if (neighbors <= 1)
+							dead_ends.push(new Point(w, h));
+						
+					}
+				}
+			}
+
+			for (let cell of dead_ends)
+				this.walls[cell.w][cell.h] = true;
+		}
+		
+		if (this.width % 2 === 0){
+			for (let cell = 0; cell < this.width; cell++){
+				this.walls[this.width - 1][cell] = true;
+				this.walls[cell][this.height - 1] = true;
+			}
+		}
+
+		for (let h = 0; h < this.height; h++){
+			for (let w = 0; w < this.width; w++){
+				if (this.walls[w][h])
+					this.walls[w][h] = 1;
+					
+				if (!this.walls[w][h])
+					this.walls[w][h] = 0;
+			}
+		}
+		
+		this._print_matrix(this.walls);
+		
+		return this.walls;
+		
+		this.queue.push({func: 'labirint_prima', var: arguments});
 	}
 
 	/**_labirint(){
