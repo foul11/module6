@@ -261,156 +261,354 @@ export class CanvasRender{
 	}
 	
 	a_star(){
-		let a_star = new Algo_a_star(new Matrix(this.width, this.height), this.width, this.height);
+		let prevState = this.AlgosState.Algo_a_star ?? {};
 		
-		a_star.ondraw = function(render, deltaT, out){
+		let cursorPos = { x: 0, y: 0 };
+		let a_star = prevState.Algo_a_star = prevState.Algo_a_star ?? new Algo_a_star();
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setGridSize(20);
+			ret.setGridDraw(true);
+			ret.setGridColor('#555');
+			
+			ret.setBrushSelect('FillBox');
+			ret.setBrushColor('#555555');
+			ret.setBrushSize(18);
+			ret.setBrushWidth(2);
+			
+			return ret;
+		}).bind(this)();
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		// aupdater = null;
+		
+		// UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
+			// if(aupdater)
+				// if(aupdater.next(deltaT).done)
+					// aupdater = null;
+		// }.bind(UCvs, this);
+		
+		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+		}.bind(UCvs, this);
+		
+		// let callBrush = function(...arg){
+			// let pi2 = Math.PI / 2;
+			
+			// UCvs.save();
+				// UCvs.setArc(pi2 * 6, pi2 * 3);
+				// if(UCvs.brush(...arg) !== false){
+					// UCvs.setArc(pi2 * 5, pi2 * 2);
+					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					// UCvs.setArc(pi2 * 4, pi2 * 1);
+					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					// UCvs.setArc(pi2 * 3, 0);
+					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					
+					// StartClast();
+				// }
+			// UCvs.restore();
+		// };
+		
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
+			let { x, y } = cursorPos;
+			
+			UCvs.startUndo();
+			setCursorPos(...e);
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+		});
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			if(e.buttons !== 1){ UCvs.endUndo(); return; }
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); return; }
+		};
+		
+		
+		/*a_star.ondraw = function(render, deltaT, out){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
 
 			ctx.clearRect(0, 0, ctxWidth, ctxHeight);
-			//ctx.save();
-				//ctx.fillStyle = out.color;
-				//ctx.fillRect(out.x, out.y, 2, 2);
+			// ctx.save();
+				// ctx.fillStyle = out.color;
+				// ctx.fillRect(out.x, out.y, 2, 2);
 			ctx.restore();
-		}.bind(a_star, this);
+		}.bind(a_star, this);*/
 
 		Config.setCtx('a_star');
 		Config.add([
 			{
 				type: 'wrapper-vert',
 				child: [
-					{
-						type: 'horz',
-						on: {
-							text:{
-								input: function(e){
-									this.value = /\d+/.exec(this.value)?.[0] ?? '';
-								},
-							},
-						},
-						child: [
-							{
-								type: 'text',
-								placeholder: 'Width',
-								id: 'conf-width',
-								min: 0,
-							},
-							{
-								type: 'text',
-								placeholder: 'Height',
-								id: 'conf-height',
-								min: 0,
-							},
-						],
-					},
-					{
-						type: 'button',
-						value: 'Create maze',
-						on: {
-							click: function(){
-								let width = parseInt($('#a_star-conf-width').val()) + 2;
-								let height = parseInt($('#a_star-conf-height').val()) + 2;
-								
-								a_star.resize(new Matrix(width || this.width,  height || this.height), width || this.width, height || this.height);
-								a_star.labirint_prima();
-							},
-						},
-					},
-				]
+					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
+				],
 			},
 			{
 				type: 'wrapper-vert',
 				child: [
 					{
+						type: 'string',
+						value: 'Brush',
+					},
+					{
 						type: 'horz',
-						on: {
-							text:{
-								input: function(e){
-									this.value = /\d+/.exec(this.value)?.[0] ?? '';
-								},
-							},
-						},
+						radio: 'Brush',
+						on: { radio: { click: function(){ UCvs.setBrushSelect($(this).attr('data-type')); }, }, },
 						child: [
 							{
-								type: 'text',
-								placeholder: 'start_x',
-								id: 'start_x',
-								min: 0,
+								type: 'radio',
+								value: 'Brush',
+								'data-type': 'FSPoint',
+								checked: true,
 							},
 							{
-								type: 'text',
-								placeholder: 'start_y',
-								id: 'start_y',
-								min: 0,
+								type: 'radio',
+								value: 'Erase',
+								'data-type': 'Erase',
 							},
-							{
-								type: 'text',
-								placeholder: 'end_x',
-								id: 'end_x',
-								min: 0,
-							},
-							{
-								type: 'text',
-								placeholder: 'end_y',
-								id: 'end_y',
-								min: 0,
-							},
-						],
+						]
+					},
+					{
+						type: 'color',
+						value: UCvs.brushColor,
+						
+						on: { input: function(){ UCvs.setBrushColor(this.value); }, },
+					},
+					{
+						type: 'range',
+						value: 'Size',
+						min: 1,
+						init: UCvs.brushSize,
+						max: 100,
+						on: { input: function(){ UCvs.setBrushSize(parseInt(this.value)); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					this.ConfPatterns.UCanvasGrid(UCvs),
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasUndoRedo(UCvs),
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Algo Settings',
+					},
+					{ type: 'pad05em' },
+					{
+						type: 'button',
+						value: 'Fill-All',
+						
+						on: { click: (e) => { UCvs.fillGrid(function(x, y){ UCvs.brush(x, y, null, null); }); } },
 					},
 					{
 						type: 'button',
-						value: 'Find Path',
-						on: {
-							click: function(){
-								let start_x = parseInt($('#a_star-start_x').val());
-								let start_y = parseInt($('#a_star-start_y').val());
-								let end_x = parseInt($('#a_star-end_x').val());
-								let end_y = parseInt($('#a_star-end_y').val());
-								
-								a_star.a_star(start_x, start_y, end_x, end_y);
-							},
-						},
+						value: 'Generate Labirint',
+						
+						on: { click: (e) => { let gridC = UCvs.getGridCount(); a_star.labirint('prima', gridC.x, gridC.y); } },
 					},
-				]
+				],
 			},
-			
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasPinkClear(UCvs),
+				],
+			},
+			// {
+				// type: 'wrapper-vert',
+				// child: [
+					// {
+						// type: 'horz',
+						// on: {
+							// text:{
+								// input: function(e){
+									// this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								// },
+							// },
+						// },
+						// child: [
+							// {
+								// type: 'text',
+								// placeholder: 'Width',
+								// id: 'conf-width',
+								// min: 0,
+							// },
+							// {
+								// type: 'text',
+								// placeholder: 'Height',
+								// id: 'conf-height',
+								// min: 0,
+							// },
+						// ],
+					// },
+					// {
+						// type: 'button',
+						// value: 'Create maze',
+						// on: {
+							// click: function(){
+								// let width = parseInt($('#a_star-conf-width').val()) + 2;
+								// let height = parseInt($('#a_star-conf-height').val()) + 2;
+								
+								// a_star.resize(new Matrix(width || this.width,  height || this.height), width || this.width, height || this.height);
+								// a_star.labirint_prima();
+							// },
+						// },
+					// },
+				// ]
+			// },
+			// {
+				// type: 'wrapper-vert',
+				// child: [
+					// {
+						// type: 'horz',
+						// on: {
+							// text:{
+								// input: function(e){
+									// this.value = /\d+/.exec(this.value)?.[0] ?? '';
+								// },
+							// },
+						// },
+						// child: [
+							// {
+								// type: 'text',
+								// placeholder: 'start_x',
+								// id: 'start_x',
+								// min: 0,
+							// },
+							// {
+								// type: 'text',
+								// placeholder: 'start_y',
+								// id: 'start_y',
+								// min: 0,
+							// },
+							// {
+								// type: 'text',
+								// placeholder: 'end_x',
+								// id: 'end_x',
+								// min: 0,
+							// },
+							// {
+								// type: 'text',
+								// placeholder: 'end_y',
+								// id: 'end_y',
+								// min: 0,
+							// },
+						// ],
+					// },
+					// {
+						// type: 'button',
+						// value: 'Find Path',
+						// on: {
+							// click: function(){
+								// let start_x = parseInt($('#a_star-start_x').val());
+								// let start_y = parseInt($('#a_star-start_y').val());
+								// let end_x = parseInt($('#a_star-end_x').val());
+								// let end_y = parseInt($('#a_star-end_y').val());
+								
+								// a_star.a_star(start_x, start_y, end_x, end_y);
+							// },
+						// },
+					// },
+				// ]
+			// },
 		], 'main');
-
-		let updater = a_star.update();
 		
-		this.ondraw = updater.next.bind(updater);
+		let UCvsUpdater = UCvs.update();
+		let updater = a_star.update(UCvs, UCvsUpdater.next.bind(UCvsUpdater));
+		updater = prevState.updater = prevState.updater ?? updater.next.bind(updater);
+		
+		this.ondraw = updater;
+		this.AlgosState.Algo_a_star = prevState;
 	}
 
 	claster(){
 		let prevState = this.AlgosState.Algo_Claster ?? {};
 		
 		let cursorPos = { x: 0, y: 0 };
-		let UCvs = prevState.UCvs = prevState.UCvs ?? new UCanvas(this.width, this.height);
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setGridSize(20);
+			ret.setGridDraw(true);
+			ret.setGridColor('#555');
+			
+			ret.setBrushSelect('FSPoint');
+			ret.setBrushColor('#ffffff');
+			ret.setBrushSize(10);
+			ret.setBrushWidth(2);
+			
+			return ret;
+		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
-		UCvs.setGridSize(20);
-		UCvs.setGridDraw(true);
-		UCvs.setGridColor('#555');
-		
-		UCvs.setBrushSelect('FSPoint');
-		UCvs.setBrushColor('#ffffff');
-		UCvs.setBrushSize(10);
-		UCvs.setBrushWidth(2);
-		
 		let enableOutCircle = true;
-		let cupdater = null;
+		let cupdater = [
+			null,
+			null,
+			null,
+			null,
+		];
+		
 		let StartClast = function(){
-			let Claster = (new Algo_Claster(UCvs.getForType(UCanvas.RECT.FPOINT), UCvs.width, UCvs.height));
-			Claster.changeDistFunc($('#claster-dist-radios :checked').attr('data-type'));
-			Claster.changeClastCount(parseInt($('#claster-count-clasters').val()));
-			cupdater = Claster.update(UCvs.getAll(), 0 ,0, enableOutCircle);
+			let points = UCvs.getForType(UCanvas.RECT.FPOINT);
+			
+			let distF = $('#claster-dist-radios :checked').attr('data-type');
+			let clastC = parseInt($('#claster-count-clasters').val());
+			let allDraws = UCvs.getAll();
+			
+			let methods = ['k_means', 'agglomerative', 'connect_components', 'min_cover_tree'];
+			
+			for(let i = 0; i < 4; i++){
+				let toPoint = [];
+				
+				for(let j = 0; j < points.length; j+=4)
+					toPoint.push(points[j + i]);
+				
+				let Claster = new Algo_Claster(toPoint, UCvs.width, UCvs.height);
+				
+				Claster.changeClastMethod(methods[i]);
+				Claster.changeDistFunc(distF);
+				Claster.changeClastCount(clastC);
+				
+				cupdater[i] = Claster.update(allDraws, 0 ,0, enableOutCircle);
+			}
 		}.bind(this);
 		
 		UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
-			if(cupdater)
-				if(cupdater.next(deltaT).done)
-					cupdater = null;
+			for(let i = 0; i < 4; i++)
+				if(cupdater[i])
+					if(cupdater[i].next(deltaT).done)
+						cupdater[i] = null;
 		}.bind(UCvs, this);
 		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
@@ -421,14 +619,31 @@ export class CanvasRender{
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
 		}.bind(UCvs, this);
 		
+		let callBrush = function(...arg){
+			let pi2 = Math.PI / 2;
+			
+			UCvs.save();
+				UCvs.setArc(pi2 * 6, pi2 * 3);
+				if(UCvs.brush(...arg) !== false){
+					UCvs.setArc(pi2 * 5, pi2 * 2);
+					UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					UCvs.setArc(pi2 * 4, pi2 * 1);
+					UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					UCvs.setArc(pi2 * 3, 0);
+					UCvs.brush(...arg, UCanvas.CHECK.NONE);
+					
+					StartClast();
+				}
+			UCvs.restore();
+		};
+		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
 			let { x, y } = cursorPos;
 			
 			UCvs.startUndo();
 			setCursorPos(...e);
 			
-			if(UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos)) !== false)
-				StartClast();
+			callBrush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
 		});
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -438,8 +653,7 @@ export class CanvasRender{
 			
 			if(e.buttons !== 1){ UCvs.endUndo(); return; }
 			
-			if(UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos)) !== false)
-				StartClast();
+			callBrush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
 			
 			e.preventDefault();
 			e.stopPropagation();
@@ -582,7 +796,7 @@ export class CanvasRender{
 						type: 'button',
 						value: 'Fill-All',
 						
-						on: { click: (e) => { UCvs.fillGrid(function(x, y){ UCvs.brush(x, y); }); } },
+						on: { click: (e) => { UCvs.fillGrid(function(x, y){ callBrush(x, y, null, null); }); } },
 					},
 					{
 						type: 'button',
@@ -601,7 +815,6 @@ export class CanvasRender{
 		], 'main');
 		
 		/*
-			adds arc - point div 3 color
 			speed multiplayer with for genetics/claster
 		*/
 		
@@ -616,17 +829,21 @@ export class CanvasRender{
 		let prevState = this.AlgosState.Algo_Genetics ?? {};
 		
 		let cursorPos = { x: 0, y: 0 };
-		let UCvs = prevState.UCvs = prevState.UCvs ?? new UCanvas(this.width, this.height);
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setGridSize(40);
+			ret.setGridDraw(true);
+			ret.setGridColor('#555');
+			
+			ret.setBrushSelect('FSPoint');
+			ret.setBrushColor('#ffffff');
+			ret.setBrushSize(15);
+			ret.setBrushWidth(3);
+			
+			return ret;
+		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
-		
-		UCvs.setGridSize(40);
-		UCvs.setGridDraw(true);
-		UCvs.setGridColor('#555');
-		
-		UCvs.setBrushSelect('FSPoint');
-		UCvs.setBrushColor('#ffffff');
-		UCvs.setBrushSize(15);
-		UCvs.setBrushWidth(3);
 		
 		let genetics = new Algo_Genetics([]);
 		let gupdater = null;
@@ -1412,17 +1629,21 @@ export class CanvasRender{
 		let prevState = this.AlgosState.test_UCanvas ?? {};
 		
 		let cursorPos = { x: 0, y: 0 };
-		let UCvs = prevState.UCvs = prevState.UCvs ?? new UCanvas(this.width, this.height);
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setGridSize(40);
+			ret.setGridDraw(true);
+			ret.setGridColor('#555');
+			
+			ret.setBrushSelect('FSPoint');
+			ret.setBrushColor('#973f3f');
+			ret.setBrushSize(15);
+			ret.setBrushWidth(3);
+			
+			return ret;
+		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
-		
-		UCvs.setGridSize(40);
-		UCvs.setGridDraw(true);
-		UCvs.setGridColor('#555');
-		
-		UCvs.setBrushSelect('FSPoint');
-		UCvs.setBrushColor('#973f3f');
-		UCvs.setBrushSize(15);
-		UCvs.setBrushWidth(3);
 		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;

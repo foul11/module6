@@ -1,4 +1,5 @@
 import { Matrix } from "../_helpers/Matrix";
+import { UCanvas } from "../_helpers/UCanvas";
 
 class Point{
 	constructor(x, y){
@@ -14,22 +15,27 @@ function getRandomInt(min, max) {
 }
 
 export class Algo_a_star{
-	constructor(Matrix, height, width){
+	static QTYPE = {
+		LABIRINT: 1,
+		A_STAR: 2,
+	};
+	
+	constructor(/* Matrix, height, width */){
 		this.onstart = null;
 		this.onend = null;
 		
-		this.walls = Matrix;
-		this.height = Number(height);
-		this.width = Number(width);
+		// this.walls = Matrix;
+		// this.height = Number(height);
+		// this.width = Number(width);
 		this.ondraw = null;
 
 		this.queue = [];
 	}
 	
-	resize(Matrix, height, width){
-		this.walls = Matrix;
-		this.height = Number(height);
-		this.width = Number(width);
+	resize(/* Matrix, */height, width){
+		// this.walls = Matrix;
+		// this.height = Number(height);
+		// this.width = Number(width);
 	}
 
 	_print_matrix(matrix = this.walls){
@@ -43,51 +49,123 @@ export class Algo_a_star{
 		}
 	};
 	
-	*update(){
+	*update(UCvs, UCvsUpdater){
 		if(this.onstart instanceof Function)
 			this.onstart.call(this)();
 		
+		let grid = [];
+		
+		UCvs.onbrush = function(obj, x, y){
+			if(obj === UCanvas.RECT.DELETE)
+				grid[x][y] = true;
+			else
+				grid[x][y] = false;
+		};
+		
+		UCvs.ongridchange = function(gridG, gridO, gridC){
+			grid = [];
+			
+			for(let i = 0; i < gridC.x; i++){
+				grid[i] = [];
+				
+				for(let j = 0; j < gridC.y; j++){
+					grid[i][j] = true;
+				}
+			}
+		};
+		
+		UCvs.ongridchange(null, null, UCvs.getGridCount());
+		
 		while(true){
-			/* code... */
 			let deltaT = yield;
-			let ret = this.test;
+			
+			UCvsUpdater(deltaT);
 			
 			if (this.queue.length == 0)
 				continue;
 			
-			let step = this.queue.splice(0, 1)[0];
+			let curr = this.queue.splice(0, 1)[0];
 			
-			switch (step.func) {
-				/*case 'labirint':
-					console.log(step);
-					
-					let generator = this.labirint();
-					let flag = false;
-					let result;
-
-					while(!flag){
-						let func_vals = generator.next();
-						result = func_vals.value;
-						flag = func_vals.done;
-						console.log(result);
+			let next;
+			
+			switch (curr.type) {
+				case Algo_a_star.QTYPE.LABIRINT:
+					while(!(next = curr.gen.next()).done){
+						deltaT = yield;
+						
+						let x = next.value.y + 1;
+						let y = next.value.x + 1;
+						let wall = next.value.wall;
+						let currGrid = UCvs.grid;
+						
+						grid[x][y] = wall;
+						
+						UCvs.save();
+							UCvs.setBrushSize(UCvs.grid.x);
+							
+							if(wall){
+								UCvs.setBrushSelect('Erase');
+								UCvs.brush(x * currGrid.x, y * currGrid.y);
+							}else{
+								UCvs.setBrushSelect('FillBox');
+								UCvs.setBrushColor('#555555');
+								UCvs.brush(x * currGrid.x, y * currGrid.y);
+							}
+						UCvs.restore();
+						
+						UCvsUpdater(deltaT);
 					}
-					break;*/
+					
+					// let currGrid = UCvs.grid;
+					
+					// for(let i = 1; i <= next.value.length; i++){
+						// for(let j = 1; j <= next.value[0].length; j++){
+							// if(next.value[i-1][j-1]){
+								// UCvs.setBrushSelect('Erase');
+								// UCvs.brush(i * currGrid.x , j * currGrid.y);
+							// }else{
+								// UCvs.setBrushSelect('FillBox');
+								// UCvs.setBrushColor('#555555');
+								// UCvs.brush(i * currGrid.x, j * currGrid.y);
+							// }
+						// }
+					// }
+					
+					// next.value
+					console.log(next.value);
+					break;
 			
 				default:
+					throw Error('QTYPE Error');
 					break;
 			}
 			
 			if(this.ondraw instanceof Function)
-				this.ondraw.call(this, deltaT, ret);
+				this.ondraw.call(this, deltaT, /* ret */);
 		}
 		
 		if(this.onend instanceof Function)
 			this.onend.call(this);
 	}
+	
+	labirint(name, width, height){
+		let lab;
+		
+		switch(name){
+			case 'prima': lab = this._labirint_Prima(width, height); break;
+			case 'kruskal': lab = this._labirint_Kruskal(width, height); break;
+			default: throw Error('labirint name Error');
+		}
+		
+		this.queue.push({ type: Algo_a_star.QTYPE.LABIRINT, gen: lab });
+	}
 
-	a_star(start_x, start_y, end_x, end_y){
-		let height = this.height;
-		let width = this.width;
+	*_a_star(maze, start_x, start_y, end_x, end_y){
+		// let height = this.height;
+		// let width = this.width;
+		let height = maze[0].length;
+		let width = maze.length;
+		
 		let start = new Point(start_x, start_y);
 		let end = new Point(end_x, end_y);
 
@@ -102,14 +180,14 @@ export class Algo_a_star{
 			}
 		}
 
-		function *return_path(current_node, maze){
+		function *return_path(current_node){
 			let path = [];
 			let current = current_node;
-			let result = new Matrix(width, height);
+			// let result = new Matrix(width, height);
 
-			for (let i = 0; i < height; i++)
-				for (let j = 0; j < width; j++)
-					result[j][i] = -1;
+			// for (let i = 0; i < height; i++)
+				// for (let j = 0; j < width; j++)
+					// result[j][i] = -1;
 
 			while (current !== undefined){
 				path.push(current.position);
@@ -123,15 +201,15 @@ export class Algo_a_star{
 			let start_val = 0;
 
 			for (let i = 0; i < path.length; i++){
-				result[path[i].w][path[i].h] = start_val;
-				yield {x: path[i].w, y: path[i].h, val: start_val};
+				// result[path[i].w][path[i].h] = start_val;
+				yield { x: path[i].w, y: path[i].h, val: start_val };
 				start_val++;
 			}
 
-			return result;
+			return path;
 		}
 
-		function search(maze, cost, start, end){
+		function *search(maze, cost, start, end){
 			let start_node = new Node(undefined, start);
 			let end_node = new Node(undefined, end);
 
@@ -158,6 +236,8 @@ export class Algo_a_star{
 
 				let current_node = yet_to_visit_list[0];
 				let current_index = 0;
+				
+				yield { x: current_node.position.w, y: current_node.position.h, child: false };
 
 				for (let index = 0; index < yet_to_visit_list.length; index++){
 					let item = yet_to_visit_list[index];
@@ -191,7 +271,7 @@ export class Algo_a_star{
 					if (node_x > (width - 1) || node_x < 0 || node_y > (height - 1) || node_y < 0)
 						continue;
 
-					if (maze[node_x][node_y] !== 0)
+					if (maze[node_x][node_y] != 0)
 						continue;
 
 					let new_node = new Node(current_node, node_position);
@@ -203,7 +283,7 @@ export class Algo_a_star{
 					let child_visited = [];
 
 					for (let visited_child of visited_list)
-						if (visited_child === child)
+						if (visited_child === child) /* Не достижимое место, попытка сравнивать новую ноду, с уже посещеными, всегда будет false вне зависмости от значений в обьекте */
 							child_visited.push(visited_child);
 
 					if (child_visited.length > 0)
@@ -227,33 +307,32 @@ export class Algo_a_star{
 						continue;
 
 					yet_to_visit_list.push(child);
+					
+					yield { x: child.position.w, y: child.position.h, child: true };
 				}
 			}
 		}
 
 		let cost = 1;
-		let current_node = search(this.walls, cost, start, end);
-
-		this._print_matrix(answer);		
-
-		this.queue.push({func: 'a_star', var: arguments});
+		return yield* search(this.walls, cost, start, end);
 	}
 	
-	*labirint_Prima(width, height) {
+	*_labirint_Prima(width, height) {
         let maze = [];
-		for (let i = 0; i < height; i++)
+		for (let i = 0; i < height; i++){
+			maze[i] = [];
+			
 			for (let j = 0; j < width; j++){
-				this.walls[j][i] = true;
-                yield {x:j, y:i};
+				maze[i][j] = true;
+                // yield {x:j, y:i};
             }
-
-
-
+		}
+		
 		let x = getRandomInt(0, width/2) * 2 + 1;
 		let y = getRandomInt(0, height/2) * 2 + 1;
 		
 		maze[x][y] = false;
-        yield {x:x, y:y};
+        yield { x: x, y: y, wall: false };
 		
 		let to_check = [];
 
@@ -277,6 +356,8 @@ export class Algo_a_star{
 			let y = cell.h;
 
 			maze[x][y] = false;
+			yield { x: x, y: y, wall: false };
+			
 			to_check.splice(index, 1);
 
 			let Direction = [1, 2, 3, 4];
@@ -288,7 +369,7 @@ export class Algo_a_star{
 					case 1: //North
 						if (y - 2 >= 0 && !maze[x][y-2]){
 							maze[x][y-1] = false;
-                            yield {x:x, y:y-1};
+                            yield { x: x, y: y - 1, wall: false };
 							Direction.splice(0, Direction.length);
 						}
 						break;
@@ -296,7 +377,7 @@ export class Algo_a_star{
 					case 2: //South
 						if (y + 2 < height && !maze[x][y + 2]){
 							maze[x][y + 1] = false;
-                            yield {x: x, y: y + 2};
+                            yield { x: x, y: y + 1, wall: false };
 							Direction.splice(0, Direction.length);
 						}
 						break;
@@ -304,7 +385,7 @@ export class Algo_a_star{
 					case 3: //West
 						if (x + 2 < width && !maze[x+2][y]){
 							maze[x + 1][y] = false;
-                            yield {x: x + 2, y: y};
+                            yield { x: x + 1, y: y, wall: false };
 							Direction.splice(0, Direction.length);
 						}
 						break;
@@ -312,12 +393,12 @@ export class Algo_a_star{
 					case 4:	//East
 						if (x - 2 >= 0 && !maze[x-2][y]){
 							maze[x - 1][y] = false;
-                            yield {x: x - 2, y: y};
+                            yield { x: x - 1, y: y, wall: false };
 							Direction.splice(0, Direction.length);
 						}
 						break;
 				};
-
+				
 				Direction.splice(dir_index, 1);
 			}
 
@@ -362,38 +443,35 @@ export class Algo_a_star{
 				}
 			}
 
-			for (let cell of dead_ends)
+			for (let cell of dead_ends){
 				maze[cell.w][cell.h] = true;
-                yield {x: cell.w, y: cell.h};
+                yield { x: cell.w, y: cell.h, wall: true };
+			}
 		}
 		
 		if (width % 2 === 0){
 			for (let cell = 0; cell < width; cell++){
 				maze[width - 1][cell] = true;
-                yield {x: width - 1, y: cell};
+                yield { x: width - 1, y: cell, wall: true };
 				maze[cell][height - 1] = true;
-                yield {x: cell, y: height - 1};
+                yield { x: cell, y: height - 1, wall: true };
 			}
 		}
 
-		for (let h = 0; h < height; h++){
-			for (let w = 0; w < width; w++){
-				if (maze[w][h])
-					maze[w][h] = 1;
+		// for (let h = 0; h < height; h++){
+			// for (let w = 0; w < width; w++){
+				// if (maze[w][h])
+					// maze[w][h] = 1;
 					
-				if (!maze[w][h])
-					maze[w][h] = 0;
-			}
-		}
-		
-		this._print_matrix(maze);
+				// if (!maze[w][h])
+					// maze[w][h] = 0;
+			// }
+		// }
 		
 		return maze;
-		
-		this.queue.push({func: 'labirint_prima', var: arguments});
 	}
 
-	labirint_Kruskal(){ //хуета
+	_labirint_Kruskal(){ //хуета
 		for (let i = 0; i < this.height; i++){
 			for (let j = 0; j < this.width; j++){
 				this.walls[j][i] = 1;
@@ -455,7 +533,7 @@ export class Algo_a_star{
 		this.print_matrix(this.walls);
 	}
 
-	labirint_Xueta(){ //не работает
+	_labirint_Xueta(){ //не работает
 		let unvisited = [];
 		for (let i = 0; i < this.height; i++){
 			for (let j = 0; j < this.width; j++){
@@ -561,16 +639,4 @@ export class Algo_a_star{
 
 		this.print_matrix(this.walls);
 	}
-
-	/**_labirint(){
-		let i = 0;
-
-		while(true){
-			console.log('Ok');
-			yield i++;
-
-			if (i > 5)
-				break;
-		}
-	}*/
 }

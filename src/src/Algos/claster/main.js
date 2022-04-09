@@ -139,15 +139,14 @@ export class Algo_Claster {
 				}
 			}
 			*/
-			//console.log(this.points);
-			console.log(centre_claster);
 			yield this.points;
 		}
 		
 		// return this.points;
 	}
 
-	agglomerative(count_claster) {//необязательный
+	*agglomerative(count_claster) {//необязательный
+		let min = 0;
 		if(count_claster==undefined){
 			count_claster=3;
 		}
@@ -157,14 +156,16 @@ export class Algo_Claster {
 		return this.points;
 	}
 
-	connect_components(count_claster){
+	*connect_components(count_claster){
+		let min = 0;
 		for(let i=0;i<this.points.length;i++){
 			this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
 		}
 		return this.points;
 	}
 
-	min_cover_tree(count_claster){
+	*min_cover_tree(count_claster){
+		let min = 0;
 		for(let i=0;i<this.points.length;i++){
 			this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
 		}
