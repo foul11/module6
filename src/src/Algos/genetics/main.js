@@ -21,6 +21,8 @@ export class Algo_Genetics {
 		this.onstart = null;
 		this.onend = null;
 		this.ondraw = null;
+		
+		this.speedMul = 1;
 	}
 
 	* update(ctx) {
@@ -36,10 +38,8 @@ export class Algo_Genetics {
 		while (true) {
 			let rnext;
 			
-			// for(let i = 0; i < 8; i++)
-				rnext = gen_algo_it.next();
-
-			points = rnext.value ?? points;
+			for(let i = 0; i < this.speedMul; i++)
+				points = (rnext = gen_algo_it.next()).value ?? points;
 
 			for (let i = 0; i < points.length; i++) {
 				let lastP;
@@ -61,7 +61,7 @@ export class Algo_Genetics {
 
 			if (this.ondraw instanceof Function)
 				this.ondraw.call(this, deltaT, ctx);
-
+			
 			deltaT = yield;
 		}
 

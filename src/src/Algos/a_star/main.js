@@ -28,6 +28,16 @@ export class Algo_a_star{
 		// this.height = Number(height);
 		// this.width = Number(width);
 		this.ondraw = null;
+		this.forceStop = false;
+		
+		this.StartPoint = null;
+		this.EndPoint = null;
+		this.StartPointO = null;
+		this.EndPointO = null;
+		
+		this.speedMul = 1;
+		
+		this.grid = [];
 
 		this.queue = [];
 	}
@@ -53,86 +63,152 @@ export class Algo_a_star{
 		if(this.onstart instanceof Function)
 			this.onstart.call(this)();
 		
-		let grid = [];
+		let deltaT;
+		this.grid = [];
 		
 		UCvs.onbrush = function(obj, x, y){
-			if(obj === UCanvas.RECT.DELETE)
-				grid[x][y] = true;
-			else
-				grid[x][y] = false;
-		};
+			if(obj.deco) return;
+			if(obj.type === UCanvas.RECT.DELETE)
+				this.grid[x][y] = true;
+			else if(obj.type === UCanvas.RECT.FBOX)
+				this.grid[x][y] = false;
+		}.bind(this);
 		
 		UCvs.ongridchange = function(gridG, gridO, gridC){
-			grid = [];
+			this.grid = [];
 			
 			for(let i = 0; i < gridC.x; i++){
-				grid[i] = [];
+				this.grid[i] = [];
 				
 				for(let j = 0; j < gridC.y; j++){
-					grid[i][j] = true;
+					this.grid[i][j] = true;
 				}
 			}
-		};
+		}.bind(this);
 		
-		UCvs.ongridchange(null, null, UCvs.getGridCount());
+		UCvs.onclear = function(){
+			UCvs.ongridchange(null, null, UCvs.getGridCount());
+		}.bind(this);
+		
+		UCvs.onclear();
+		
+		let i = 0;
 		
 		while(true){
-			let deltaT = yield;
+			if(!(++i % this.speedMul)) 
+				deltaT = yield;
 			
 			UCvsUpdater(deltaT);
 			
 			if (this.queue.length == 0)
 				continue;
 			
-			let curr = this.queue.splice(0, 1)[0];
+			this.forceStop = false;
 			
+			let curr = this.queue.splice(0, 1)[0];
 			let next;
 			
 			switch (curr.type) {
 				case Algo_a_star.QTYPE.LABIRINT:
 					while(!(next = curr.gen.next()).done){
-						deltaT = yield;
+						if(!(++i % this.speedMul))
+							deltaT = yield;
 						
-						let x = next.value.y + 1;
-						let y = next.value.x + 1;
-						let wall = next.value.wall;
+						if(this.forceStop)
+							break;
+						
+						let x = next.value.x + 1;
+						let y = next.value.y + 1;
 						let currGrid = UCvs.grid;
-						
-						grid[x][y] = wall;
 						
 						UCvs.save();
 							UCvs.setBrushSize(UCvs.grid.x);
 							
-							if(wall){
+							if(next.value.wall){
 								UCvs.setBrushSelect('Erase');
 								UCvs.brush(x * currGrid.x, y * currGrid.y);
 							}else{
 								UCvs.setBrushSelect('FillBox');
 								UCvs.setBrushColor('#555555');
-								UCvs.brush(x * currGrid.x, y * currGrid.y);
+								UCvs.brush(x * currGrid.x, y * currGrid.y, null, null, UCanvas.CHECK.NONE);
 							}
 						UCvs.restore();
 						
-						UCvsUpdater(deltaT);
+						if(!(i % this.speedMul))
+							UCvsUpdater(deltaT);
+					}
+					break;
+					
+				case Algo_a_star.QTYPE.A_STAR:
+					while(!(next = curr.gen.next()).done){
+						if(!(++i % this.speedMul)) 
+							deltaT = yield;
+						
+						if(this.forceStop)
+							break;
+						
+						let x = next.value.x + 1;
+						let y = next.value.y + 1;
+						let currGrid = UCvs.grid;
+						
+						UCvs.save();
+							UCvs.setBrushSize(UCvs.grid.x / 4);
+							UCvs.setBrushSelect('FillBox');
+							UCvs.setBrushColor('#00FF00');
+							
+							UCvs.brush(x * currGrid.x, y * currGrid.y, null, null, UCanvas.CHECK.NONE, { deco: true });
+						UCvs.restore();
+						
+						if(!(i % this.speedMul))
+							UCvsUpdater(deltaT);
 					}
 					
-					// let currGrid = UCvs.grid;
+					if(this.forceStop)
+						break;
 					
-					// for(let i = 1; i <= next.value.length; i++){
-						// for(let j = 1; j <= next.value[0].length; j++){
-							// if(next.value[i-1][j-1]){
-								// UCvs.setBrushSelect('Erase');
-								// UCvs.brush(i * currGrid.x , j * currGrid.y);
-							// }else{
-								// UCvs.setBrushSelect('FillBox');
-								// UCvs.setBrushColor('#555555');
-								// UCvs.brush(i * currGrid.x, j * currGrid.y);
-							// }
-						// }
-					// }
+					curr.gen = next.value;
 					
-					// next.value
-					console.log(next.value);
+					if(curr.gen === false){
+						UCvs.save();
+							UCvs.setBrushSelect('FSText');
+							UCvs.setBrushColor('#FF0000');
+							UCvs.setBrushFont('10em monospace');
+							UCvs.setBrushAlign(UCanvas.ALIGN.MIDDLE | UCanvas.ALIGN.CENTER);
+							UCvs.setBrushText('ПУТЬ НЕ НАЙДЕН!');
+							UCvs.brush(UCvs.width / 2, UCvs.height / 2);
+						UCvs.restore();
+						
+						break;
+					}
+					
+					let LastP = null;
+					
+					while(!(next = curr.gen.next()).done){
+						if(!(++i % this.speedMul)) 
+							deltaT = yield;
+						
+						if(this.forceStop)
+							break;
+						
+						let x = next.value.x + 1;
+						let y = next.value.y + 1;
+						let currGrid = UCvs.grid;
+						
+						if(LastP){
+							UCvs.save();
+								UCvs.setBrushSize(UCvs.grid.x / 4);
+								UCvs.setBrushSelect('Line');
+								UCvs.setBrushColor('#FF0000');
+								
+								UCvs.brush(LastP.x * currGrid.x, LastP.y * currGrid.y, x * currGrid.x, y * currGrid.y, UCanvas.CHECK.NONE, { deco: true });
+							UCvs.restore();
+						}
+						
+						LastP = { x: x, y: y };
+						
+						if(!(i % this.speedMul))
+							UCvsUpdater(deltaT);
+					}
 					break;
 			
 				default:
@@ -141,7 +217,7 @@ export class Algo_a_star{
 			}
 			
 			if(this.ondraw instanceof Function)
-				this.ondraw.call(this, deltaT, /* ret */);
+				this.ondraw.call(this, deltaT, null);
 		}
 		
 		if(this.onend instanceof Function)
@@ -159,20 +235,21 @@ export class Algo_a_star{
 		
 		this.queue.push({ type: Algo_a_star.QTYPE.LABIRINT, gen: lab });
 	}
+	
+	a_star(x1, y1, x2, y2){
+		this.queue.push({ type: Algo_a_star.QTYPE.A_STAR, gen: this._a_star({ x: x1, y: y1}, { x: x2, y: y2}) });
+	}
 
-	*_a_star(maze, start_x, start_y, end_x, end_y){
-		// let height = this.height;
-		// let width = this.width;
+	*_a_star(start, end){
+		let maze = this.grid;
+		
 		let height = maze[0].length;
 		let width = maze.length;
-		
-		let start = new Point(start_x, start_y);
-		let end = new Point(end_x, end_y);
 
 		class Node{
-			constructor(parent = undefined, position = undefined){
+			constructor(parent, pos){
 				this.parent = parent;
-				this.position = position;
+				this.pos = pos;
 
 				this.g = 0;  //стоимость пути от начальной вершины до любой другой
 				this.h = 0;  //эвристическое приближение стоимости пути от узла n до конечного узла
@@ -182,117 +259,85 @@ export class Algo_a_star{
 
 		function *return_path(current_node){
 			let path = [];
-			let current = current_node;
-			// let result = new Matrix(width, height);
-
-			// for (let i = 0; i < height; i++)
-				// for (let j = 0; j < width; j++)
-					// result[j][i] = -1;
-
-			while (current !== undefined){
-				path.push(current.position);
-				current = current.parent;
-			}
-
-			if (path[0].w !== end.w && path[0].h !== end.h)
+			
+			do{
+				path.push(current_node.pos);
+			}while(current_node = current_node.parent);
+			
+			if (path[0].x !== end.x &&
+				path[0].y !== end.y)
 				return false;
 			
-			path = path.reverse();
-			let start_val = 0;
-
-			for (let i = 0; i < path.length; i++){
-				// result[path[i].w][path[i].h] = start_val;
-				yield { x: path[i].w, y: path[i].h, val: start_val };
-				start_val++;
-			}
-
+			for (let i = path.length; i--;)
+				yield { x: path[i].x, y: path[i].y };
+				
 			return path;
 		}
 
 		function *search(maze, cost, start, end){
-			let start_node = new Node(undefined, start);
-			let end_node = new Node(undefined, end);
-
-			start_node.g = 0;
-			start_node.h = 0;
-			start_node.f = 0;
-			
-			end_node.g = 0;
-			end_node.h = 0;
-			end_node.f = 0;
+			let start_node = new Node(null, start);
+			let end_node = new Node(null, end);
 
 			let yet_to_visit_list = [];
 			let visited_list = [];
 
 			yet_to_visit_list.push(start_node);
 
-			let outer_iterations = 0; //step
-			let max_iterations = parseInt(Math.pow(width / 2, 10));
+			let move = [[-1, 0], [0, -1], [1, 0], [0, 1]];
 
-			let move = [new Point(-1, 0), new Point(0, -1), new Point(1, 0), new Point(0, 1)];
-
-			while (yet_to_visit_list.length > 0){
-				outer_iterations++;
-
-				let current_node = yet_to_visit_list[0];
-				let current_index = 0;
+			while (yet_to_visit_list.length){
+				let curr_node = yet_to_visit_list[0];
+				let curr_index = 0;
 				
-				yield { x: current_node.position.w, y: current_node.position.h, child: false };
+				yield { x: curr_node.pos.x, y: curr_node.pos.y, child: false };
 
-				for (let index = 0; index < yet_to_visit_list.length; index++){
-					let item = yet_to_visit_list[index];
+				for (let i = 0; i < yet_to_visit_list.length; i++){
+					let item = yet_to_visit_list[i];
 					
-					if (item.f < current_node.f){
-						current_node = item;
-						current_index = index;
+					if (item.f < curr_node.f){
+						curr_node = item;
+						curr_index = i;
 					}
 				}
 
-				if (outer_iterations > max_iterations){
-					return return_path(current_node, maze);
+				yet_to_visit_list.splice(curr_index, 1);
+				visited_list.push(curr_node);
+
+				if (curr_node.pos.x == end_node.pos.x &&
+					curr_node.pos.y == end_node.pos.y){
+					return return_path(curr_node);
 				}
 
-				yet_to_visit_list.splice(current_index, 1);
-				visited_list.push(current_node);
+				let childrens = [];
 
-				if (current_node.position.w == end_node.position.w && current_node.position.h == end_node.position.h){
-					return return_path(current_node, maze);
-				}
-
-				let children = [];
-
-				for (let new_position of move){
-					let x = current_node.position.w + new_position.w;
-					let y = current_node.position.h + new_position.h;
-					let node_position = new Point(x, y);
-					let node_x = node_position.w;
-					let node_y = node_position.h;
+				for (let to_pos of move){
+					let x = curr_node.pos.x + to_pos[0];
+					let y = curr_node.pos.y + to_pos[1];
 					
-					if (node_x > (width - 1) || node_x < 0 || node_y > (height - 1) || node_y < 0)
+					if (x > (width - 1) || x < 0 || y > (height - 1) || y < 0)
 						continue;
 
-					if (maze[node_x][node_y] != 0)
+					if (maze[x][y] === true)
 						continue;
-
-					let new_node = new Node(current_node, node_position);
-
-					children.push(new_node);
+					
+					childrens.push(new Node(curr_node, { x: x, y: y }));
 				}
 
-				for (let child of children){
+				for (let child of childrens){
 					let child_visited = [];
 
 					for (let visited_child of visited_list)
-						if (visited_child === child) /* Не достижимое место, попытка сравнивать новую ноду, с уже посещеными, всегда будет false вне зависмости от значений в обьекте */
+						if (visited_child.pos.x === child.pos.x &&
+							visited_child.pos.y === child.pos.y)
 							child_visited.push(visited_child);
 
-					if (child_visited.length > 0)
+					if (child_visited.length)
 						continue;
 
-					child.g = current_node.g + cost;
+					child.g = curr_node.g + cost;
 					
-					let child_x = Math.pow(child.position.w - end_node.position.w, 2);
-					let child_y = Math.pow(child.position.h - end_node.position.h, 2);
+					let child_x = (child.pos.x - end_node.pos.x) ** 2;
+					let child_y = (child.pos.y - end_node.pos.y) ** 2;
 
 					child.h = child_x + child_y;
 					child.f = child.g + child.h;
@@ -303,29 +348,29 @@ export class Algo_a_star{
 						if (child === i && child.g > i.g)
 							arr.push(i);
 
-					if (arr.length > 0)
+					if (arr.length)
 						continue;
 
 					yet_to_visit_list.push(child);
 					
-					yield { x: child.position.w, y: child.position.h, child: true };
+					yield { x: child.pos.x, y: child.pos.y, child: true };
 				}
 			}
+			
+			return false;
 		}
 
 		let cost = 1;
-		return yield* search(this.walls, cost, start, end);
+		return yield* search(maze, cost, start, end);
 	}
 	
-	*_labirint_Prima(width, height) {
+	*_labirint_Prima(width, height, cut_edge = 0) {
         let maze = [];
-		for (let i = 0; i < height; i++){
+		for (let i = 0; i < width; i++){
 			maze[i] = [];
 			
-			for (let j = 0; j < width; j++){
+			for (let j = 0; j < height; j++)
 				maze[i][j] = true;
-                // yield {x:j, y:i};
-            }
 		}
 		
 		let x = getRandomInt(0, width/2) * 2 + 1;
@@ -337,40 +382,48 @@ export class Algo_a_star{
 		let to_check = [];
 
 		if (y-2 >= 0)
-			to_check.push(new Point(x, y - 2));
+			to_check.push({ x: x, y: y - 2 });
 		
-		if (y + 2 < height)
-			to_check.push(new Point(x, y + 2));
+		if (y+2 < height)
+			to_check.push({ x: x, y: y + 2 });
 		
 		if (x-2 >= 0)
-			to_check.push(new Point(x - 2, y));
+			to_check.push({ x: x - 2, y: y });
 		
 		if (x+2 < width)
-			to_check.push(new Point(x + 2, y));
+			to_check.push({ x: x + 2, y: y });
+		
+		function in_pos_array(arr, x, y){
+			for(let i = 0; i < arr.length; i++)
+				if(arr[i].x === x &&
+					arr[i].y === y)
+					return true;
+			return false;
+		}
 
-		while (to_check.length > 0){
-			let index = getRandomInt(0, to_check.length)
+		while (to_check.length){
+			let index = getRandomInt(0, to_check.length);
 			let cell = to_check[index];
 
-			let x = cell.w;
-			let y = cell.h;
+			let x = cell.x;
+			let y = cell.y;
 
 			maze[x][y] = false;
 			yield { x: x, y: y, wall: false };
 			
 			to_check.splice(index, 1);
 
-			let Direction = [1, 2, 3, 4];
-
-			while (Direction.length > 0){
-				let dir_index = getRandomInt(0, Direction.length);
+			let directs = [1, 2, 3, 4];
+			
+			while (directs.length){
+				let dir_index = getRandomInt(0, directs.length);
 				
-				switch (Direction[dir_index]){
+				switch (directs[dir_index]){
 					case 1: //North
-						if (y - 2 >= 0 && !maze[x][y-2]){
-							maze[x][y-1] = false;
+						if (y - 2 >= 0 && !maze[x][y - 2]){
+							maze[x][y - 1] = false;
                             yield { x: x, y: y - 1, wall: false };
-							Direction.splice(0, Direction.length);
+							directs = [];
 						}
 						break;
 						
@@ -378,95 +431,69 @@ export class Algo_a_star{
 						if (y + 2 < height && !maze[x][y + 2]){
 							maze[x][y + 1] = false;
                             yield { x: x, y: y + 1, wall: false };
-							Direction.splice(0, Direction.length);
+							stop = true;
+							directs = [];
 						}
 						break;
 						
 					case 3: //West
-						if (x + 2 < width && !maze[x+2][y]){
-							maze[x + 1][y] = false;
-                            yield { x: x + 1, y: y, wall: false };
-							Direction.splice(0, Direction.length);
+						if (x - 2 >= 0 && !maze[x - 2][y]){
+							maze[x - 1][y] = false;
+                            yield { x: x - 1, y: y, wall: false };
+							directs = [];
 						}
 						break;
 						
-					case 4:	//East
-						if (x - 2 >= 0 && !maze[x-2][y]){
-							maze[x - 1][y] = false;
-                            yield { x: x - 1, y: y, wall: false };
-							Direction.splice(0, Direction.length);
+					case 4: //East
+						if (x + 2 < width && !maze[x + 2][y]){
+							maze[x + 1][y] = false;
+                            yield { x: x + 1, y: y, wall: false };
+							directs = [];
 						}
 						break;
 				};
 				
-				Direction.splice(dir_index, 1);
+				directs.splice(dir_index, 1);
 			}
 
-			if (y - 2 >= 0 && maze[x][y-2])
-				to_check.push(new Point(x, y - 2));
+			if (y - 2 >= 0 && maze[x][y - 2] && !in_pos_array(to_check, x, y - 2))
+				to_check.push({ x: x, y: y - 2 });
 			
-			if (y + 2 < height && maze[x][y+2])
-				to_check.push(new Point(x, y + 2));
+			if (y + 2 < height && maze[x][y + 2] && !in_pos_array(to_check, x, y + 2))
+				to_check.push({ x: x, y: y + 2 });
 			
-			if (x - 2 >= 0 && maze[x-2][y])
-				to_check.push(new Point(x - 2, y));
+			if (x - 2 >= 0 && maze[x - 2][y] && !in_pos_array(to_check, x - 2, y))
+				to_check.push({ x: x - 2, y: y });
 			
-			if (x + 2 < width && maze[x+2][y])
-				to_check.push(new Point(x + 2, y));
-			
+			if (x + 2 < width && maze[x + 2][y] && !in_pos_array(to_check, x + 2, y))
+				to_check.push({ x: x + 2, y: y });
 		}
 
-		for (let i = 0; i < 4; i++){
-			let dead_ends = [];
+		for (let i = 0; i < cut_edge; i++){
+			let deads = [];
 
-			for (let h = 0; h < height; h++){
-				for (let w = 0; w < width; w++){
-					if (!maze[w][h]){
-						let neighbors = 0;
-						if (h - 1 >= 0 && !maze[w][h-1])
-							neighbors++;
-							
-						if (h + 1 < height && !maze[w][h+1])
-							neighbors++;
+			for (let j = 0; j < height; j++){
+				for (let k = 0; k < width; k++){
+					if (!maze[k][j]){
+						let n = 0;
 						
-						if (w - 1 >= 0 && !maze[w-1][h])
-							neighbors++;
+						if (j - 1 >= 0 && !maze[k][j - 1] ||
+							j + 1 < height && !maze[k][j + 1] ||
+							k - 1 >= 0 && !maze[k - 1][j] ||
+							k + 1 < width && !maze[k + 1][j])
+							n++;
 						
-						if (w + 1 < width && !maze[w+1][h])
-							neighbors++;
-						
-						
-						if (neighbors <= 1)
-							dead_ends.push(new Point(w, h));
-						
+						if (n <= 1)
+							deads.push({ x: k, y: j});
 					}
 				}
 			}
 
-			for (let cell of dead_ends){
-				maze[cell.w][cell.h] = true;
-                yield { x: cell.w, y: cell.h, wall: true };
+			for (let cell of deads){
+				maze[cell.x][cell.y] = true;
+                yield { x: cell.x, y: cell.y, wall: true };
 			}
 		}
-		
-		if (width % 2 === 0){
-			for (let cell = 0; cell < width; cell++){
-				maze[width - 1][cell] = true;
-                yield { x: width - 1, y: cell, wall: true };
-				maze[cell][height - 1] = true;
-                yield { x: cell, y: height - 1, wall: true };
-			}
-		}
-
-		// for (let h = 0; h < height; h++){
-			// for (let w = 0; w < width; w++){
-				// if (maze[w][h])
-					// maze[w][h] = 1;
-					
-				// if (!maze[w][h])
-					// maze[w][h] = 0;
-			// }
-		// }
 		
 		return maze;
 	}

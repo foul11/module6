@@ -188,6 +188,23 @@ export class CanvasRender{
 					],
 				};
 			},
+			
+			SpeedMul(classes, callback = null){
+				return {
+					type: 'horz',
+					child: [
+						{
+							type: 'range',
+							value: 'Speed Multipliyer',
+							min: 1,
+							max: 1000,
+							init: 1,
+							
+							on: { input: (e) => { classes.speedMul = parseInt(e.target.value); if(callback instanceof Function) callback.call(e.target, e); } },
+						},
+					]
+				};
+			},
 		};
 		
 		ctx.canvas.width = ctxWidth;
@@ -281,39 +298,81 @@ export class CanvasRender{
 		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
-		// aupdater = null;
-		
-		// UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
-			// if(aupdater)
-				// if(aupdater.next(deltaT).done)
-					// aupdater = null;
-		// }.bind(UCvs, this);
-		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+			
+			if(a_star.StartPoint) UCvs._draw(ctx, a_star.StartPoint);
+			if(a_star.StartPointO) UCvs._draw(ctx, a_star.StartPointO);
+			if(a_star.EndPoint) UCvs._draw(ctx, a_star.EndPoint);
+			if(a_star.EndPointO) UCvs._draw(ctx, a_star.EndPointO);
 		}.bind(UCvs, this);
 		
-		// let callBrush = function(...arg){
-			// let pi2 = Math.PI / 2;
-			
-			// UCvs.save();
-				// UCvs.setArc(pi2 * 6, pi2 * 3);
-				// if(UCvs.brush(...arg) !== false){
-					// UCvs.setArc(pi2 * 5, pi2 * 2);
-					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
-					// UCvs.setArc(pi2 * 4, pi2 * 1);
-					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
-					// UCvs.setArc(pi2 * 3, 0);
-					// UCvs.brush(...arg, UCanvas.CHECK.NONE);
+		let mazeType = 'prima';
+		let brushType = null;
+		let isDecoMode = false;
+		let callBrush = function(...args){
+			switch(brushType){
+				case 'start':
+					if(a_star.StartPoint){
+						args = UCvs._tranposeCords(args[0] - UCvs.gridOffset.x, args[1] - UCvs.gridOffset.y);
+						if(UCvs._isOutMap(args[0], args[1])) return false;
+						
+						a_star.StartPointO.x1 = a_star.StartPoint.x1 = args[0];
+						a_star.StartPointO.y1 = a_star.StartPoint.y1 = args[1];
+					}else{
+						UCvs.save();
+							UCvs.setBrushColor('#00FF00');
+							UCvs.setBrushSize(UCvs.grid.x);
+							
+							a_star.StartPoint = UCvs.getById(UCvs.brush(...args, UCanvas.CHECK.NONE, { deco: true }));
+							a_star.StartPointO = UCvs.getById(a_star.StartPoint.id + 1);
+							
+							a_star.StartPoint.ondestruct = function(){
+								this.StartPoint.type = UCanvas.RECT.NONE;
+								this.StartPointO.type = UCanvas.RECT.NONE;
+								
+								this.StartPoint = null;
+								this.StartPointO = null;
+							}.bind(a_star);
+						UCvs.restore();
+					}
+					break;
 					
-					// StartClast();
-				// }
-			// UCvs.restore();
-		// };
+				case 'end':
+					if(a_star.EndPoint){
+						args = UCvs._tranposeCords(args[0] - UCvs.gridOffset.x, args[1] - UCvs.gridOffset.y);
+						if(UCvs._isOutMap(args[0], args[1])) return false;
+						
+						a_star.EndPointO.x1 = a_star.EndPoint.x1 = args[0];
+						a_star.EndPointO.y1 = a_star.EndPoint.y1 = args[1];
+					}else{
+						UCvs.save();
+							UCvs.setBrushColor('#FF0000');
+							UCvs.setBrushSize(UCvs.grid.x);
+							
+							a_star.EndPoint = UCvs.getById(UCvs.brush(...args, UCanvas.CHECK.NONE, { deco: true }));
+							a_star.EndPointO = UCvs.getById(a_star.EndPoint.id + 1);
+							
+							a_star.EndPoint.ondestruct = function(){
+								this.EndPoint.type = UCanvas.RECT.NONE;
+								this.EndPointO.type = UCanvas.RECT.NONE;
+								
+								this.EndPoint = null;
+								this.EndPointO = null;
+							}.bind(a_star);
+						UCvs.restore();
+					}
+					break;
+				
+				default:
+					UCvs.brush(...args, undefined, { deco: isDecoMode });
+					break;
+			}
+		}.bind(this);
 		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
 			let { x, y } = cursorPos;
@@ -321,7 +380,7 @@ export class CanvasRender{
 			UCvs.startUndo();
 			setCursorPos(...e);
 			
-			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+			callBrush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
 		});
 		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
 		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
@@ -331,28 +390,15 @@ export class CanvasRender{
 			
 			if(e.buttons !== 1){ UCvs.endUndo(); return; }
 			
-			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+			callBrush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
 			
 			e.preventDefault();
 			e.stopPropagation();
 		};
 		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
-			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); return; }
-			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); return; }
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); a_star.forceStop = true; return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); a_star.forceStop = true; return; }
 		};
-		
-		
-		/*a_star.ondraw = function(render, deltaT, out){
-			let ctx = render.ctx;
-			let ctxWidth = render.width;
-			let ctxHeight = render.height;
-
-			ctx.clearRect(0, 0, ctxWidth, ctxHeight);
-			// ctx.save();
-				// ctx.fillStyle = out.color;
-				// ctx.fillRect(out.x, out.y, 2, 2);
-			ctx.restore();
-		}.bind(a_star, this);*/
 
 		Config.setCtx('a_star');
 		Config.add([
@@ -360,6 +406,7 @@ export class CanvasRender{
 				type: 'wrapper-vert',
 				child: [
 					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.SpeedMul(a_star),
 					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
 				],
 			},
@@ -373,18 +420,32 @@ export class CanvasRender{
 					{
 						type: 'horz',
 						radio: 'Brush',
-						on: { radio: { click: function(){ UCvs.setBrushSelect($(this).attr('data-type')); }, }, },
+						on: { radio: { click: function(){ UCvs.setBrushSelect($(this).attr('data-type'));}, }, },
 						child: [
 							{
 								type: 'radio',
 								value: 'Brush',
-								'data-type': 'FSPoint',
+								'data-type': 'FillBox',
 								checked: true,
+								on: { click: (e) => { brushType = null; } },
+							},
+							{
+								type: 'radio',
+								value: 'Start',
+								'data-type': 'FSBox',
+								on: { click: (e) => { brushType = 'start'; } },
+							},
+							{
+								type: 'radio',
+								value: 'End',
+								'data-type': 'FSBox',
+								on: { click: (e) => { brushType = 'end'; } },
 							},
 							{
 								type: 'radio',
 								value: 'Erase',
 								'data-type': 'Erase',
+								on: { click: (e) => { brushType = null; } },
 							},
 						]
 					},
@@ -393,6 +454,12 @@ export class CanvasRender{
 						value: UCvs.brushColor,
 						
 						on: { input: function(){ UCvs.setBrushColor(this.value); }, },
+					},
+					{
+						type: 'checkbox',
+						value: 'DecoMode',
+						
+						on: { click: function(){ isDecoMode = this.checked; } }
 					},
 					{
 						type: 'range',
@@ -415,6 +482,7 @@ export class CanvasRender{
 				child: [
 					this.ConfPatterns.UCanvasUndoRedo(UCvs),
 				],
+				on: { button: { click: () => { a_star.forceStop = true; } } },
 			},
 			{
 				type: 'wrapper-vert',
@@ -428,13 +496,64 @@ export class CanvasRender{
 						type: 'button',
 						value: 'Fill-All',
 						
-						on: { click: (e) => { UCvs.fillGrid(function(x, y){ UCvs.brush(x, y, null, null); }); } },
+						on: { click: (e) => { a_star.forceStop = true; UCvs.fillGrid(function(x, y){ UCvs.brush(x, y, null, null, undefined, { deco: isDecoMode }); }); } },
 					},
 					{
 						type: 'button',
-						value: 'Generate Labirint',
+						value: 'A*',
 						
-						on: { click: (e) => { let gridC = UCvs.getGridCount(); a_star.labirint('prima', gridC.x, gridC.y); } },
+						on: {
+							click: (e) => {
+								if(!a_star.StartPoint) return;
+								if(!a_star.EndPoint) return;
+								
+								let gridC = UCvs.getGridCount();
+								let SP = UCvs.toGridCord(a_star.StartPoint);
+								let EP = UCvs.toGridCord(a_star.EndPoint);
+								
+								a_star.forceStop = true;
+								a_star.a_star(SP.x, SP.y, EP.x, EP.y);
+							}
+						},
+					},
+					{
+						type: 'wrapper-vert',
+						child: [
+							{
+								type: 'string',
+								value: 'Maze Gen Function',
+							},
+							{ type: 'pad05em' },
+							{
+								type: 'horz',
+								radio: 'maze',
+								on: { radio: { click: (e) => { mazeType = (e.target).attr('data-type'); } } },
+								child: [
+									{
+										type: 'radio',
+										value: 'Prima',
+										'data-type': 'prima',
+										checked: true,
+									},
+									{
+										type: 'radio',
+										value: 'Kruskal',
+										'data-type': 'kruskal',
+									},
+									{
+										type: 'radio',
+										value: 'X',
+										'data-type': 'x',
+									},
+								],
+							},
+							{
+								type: 'button',
+								value: 'Generate Labirint',
+								
+								on: { click: (e) => { let gridC = UCvs.getGridCount(); a_star.forceStop = true; UCvs.clear(); a_star.labirint(mazeType, gridC.x, gridC.y); } },
+							},
+						],
 					},
 				],
 			},
@@ -444,103 +563,6 @@ export class CanvasRender{
 					this.ConfPatterns.UCanvasPinkClear(UCvs),
 				],
 			},
-			// {
-				// type: 'wrapper-vert',
-				// child: [
-					// {
-						// type: 'horz',
-						// on: {
-							// text:{
-								// input: function(e){
-									// this.value = /\d+/.exec(this.value)?.[0] ?? '';
-								// },
-							// },
-						// },
-						// child: [
-							// {
-								// type: 'text',
-								// placeholder: 'Width',
-								// id: 'conf-width',
-								// min: 0,
-							// },
-							// {
-								// type: 'text',
-								// placeholder: 'Height',
-								// id: 'conf-height',
-								// min: 0,
-							// },
-						// ],
-					// },
-					// {
-						// type: 'button',
-						// value: 'Create maze',
-						// on: {
-							// click: function(){
-								// let width = parseInt($('#a_star-conf-width').val()) + 2;
-								// let height = parseInt($('#a_star-conf-height').val()) + 2;
-								
-								// a_star.resize(new Matrix(width || this.width,  height || this.height), width || this.width, height || this.height);
-								// a_star.labirint_prima();
-							// },
-						// },
-					// },
-				// ]
-			// },
-			// {
-				// type: 'wrapper-vert',
-				// child: [
-					// {
-						// type: 'horz',
-						// on: {
-							// text:{
-								// input: function(e){
-									// this.value = /\d+/.exec(this.value)?.[0] ?? '';
-								// },
-							// },
-						// },
-						// child: [
-							// {
-								// type: 'text',
-								// placeholder: 'start_x',
-								// id: 'start_x',
-								// min: 0,
-							// },
-							// {
-								// type: 'text',
-								// placeholder: 'start_y',
-								// id: 'start_y',
-								// min: 0,
-							// },
-							// {
-								// type: 'text',
-								// placeholder: 'end_x',
-								// id: 'end_x',
-								// min: 0,
-							// },
-							// {
-								// type: 'text',
-								// placeholder: 'end_y',
-								// id: 'end_y',
-								// min: 0,
-							// },
-						// ],
-					// },
-					// {
-						// type: 'button',
-						// value: 'Find Path',
-						// on: {
-							// click: function(){
-								// let start_x = parseInt($('#a_star-start_x').val());
-								// let start_y = parseInt($('#a_star-start_y').val());
-								// let end_x = parseInt($('#a_star-end_x').val());
-								// let end_y = parseInt($('#a_star-end_y').val());
-								
-								// a_star.a_star(start_x, start_y, end_x, end_y);
-							// },
-						// },
-					// },
-				// ]
-			// },
 		], 'main');
 		
 		let UCvsUpdater = UCvs.update();
@@ -579,6 +601,8 @@ export class CanvasRender{
 			null,
 		];
 		
+		let Claster = prevState.Claster = prevState.Claster ?? new Algo_Claster(UCvs.width, UCvs.height);
+		
 		let StartClast = function(){
 			let points = UCvs.getForType(UCanvas.RECT.FPOINT);
 			
@@ -594,13 +618,12 @@ export class CanvasRender{
 				for(let j = 0; j < points.length; j+=4)
 					toPoint.push(points[j + i]);
 				
-				let Claster = new Algo_Claster(toPoint, UCvs.width, UCvs.height);
-				
 				Claster.changeClastMethod(methods[i]);
 				Claster.changeDistFunc(distF);
 				Claster.changeClastCount(clastC);
 				
-				cupdater[i] = Claster.update(allDraws, 0 ,0, enableOutCircle);
+				cupdater[i] = Claster.update(toPoint, allDraws, 0 ,0, enableOutCircle);
+				cupdater[i].next();
 			}
 		}.bind(this);
 		
@@ -669,6 +692,7 @@ export class CanvasRender{
 				type: 'wrapper-vert',
 				child: [
 					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.SpeedMul(Claster),
 					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
 				],
 			},
@@ -815,7 +839,7 @@ export class CanvasRender{
 		], 'main');
 		
 		/*
-			speed multiplayer with for genetics/claster
+			checkboxs for 1 2 4 clasters
 		*/
 		
 		let updater = UCvs.update();
@@ -845,7 +869,7 @@ export class CanvasRender{
 		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
-		let genetics = new Algo_Genetics([]);
+		let genetics = prevState.genetics = prevState.genetics ?? new Algo_Genetics([]);
 		let gupdater = null;
 		
 		UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
@@ -884,8 +908,8 @@ export class CanvasRender{
 			e.stopPropagation();
 		};
 		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
-			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); return; }
-			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); return; }
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); gupdater = null; return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); gupdater = null; return; }
 		};
 		
 		Config.setCtx('genetics');
@@ -894,6 +918,7 @@ export class CanvasRender{
 				type: 'wrapper-vert',
 				child: [
 					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.SpeedMul(genetics),
 					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
 				]
 			},
@@ -971,7 +996,7 @@ export class CanvasRender{
 			{
 				type: 'wrapper',
 				child: [
-					this.ConfPatterns.UCanvasUndoRedo(UCvs),
+					this.ConfPatterns.UCanvasUndoRedo(UCvs, () => { gupdater = null; }),
 				],
 			},
 			{
@@ -1740,6 +1765,23 @@ export class CanvasRender{
 									{
 										type: 'radio',
 										value: 'Erase',
+									},
+								],
+							},
+							{
+								type: 'horz',
+								child: [
+									{
+										type: 'radio',
+										value: 'StrokeText',
+									},
+									{
+										type: 'radio',
+										value: 'FillText',
+									},
+									{
+										type: 'radio',
+										value: 'FSText',
 									},
 								],
 							},

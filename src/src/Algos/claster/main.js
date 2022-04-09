@@ -6,7 +6,7 @@ export class Algo_Claster {
 	// points = [];
 	count_point = 0;
 
-	constructor(input, width, height) {
+	constructor(/*input, */width, height) {
 		// this.matrix_input = matrix;
 		// this.width = matrix.length;
 		// this.height = matrix[0].length;
@@ -15,7 +15,7 @@ export class Algo_Claster {
 		
 		this.width = width;
 		this.height = height;
-		this.points = input;
+		// this.points = input;
 		
 		this.dist_name = 'Euclid';
 		this.selectFunc = 'k_means';
@@ -24,14 +24,16 @@ export class Algo_Claster {
 		this.onstart = null;
 		this.onend = null;
 		this.ondraw = null;
+		
+		this.speedMul = 1;
 	}
 	
-	*update(otherObjUCvs, numbPosArc, countPosArc, enableOutCircle = true){
+	*update(input, otherObjUCvs, numbPosArc, countPosArc, enableOutCircle = true){
 		if (this.onstart instanceof Function)
 			this.onstart.call(this);
 
 		let deltaT = 0;
-		let gen_algo_it = this[this.selectFunc](this.count_claster);
+		let gen_algo_it = this[this.selectFunc](input, this.count_claster);
 		let points = [];
 		let clastColor = [];
 		let drawObj = {};
@@ -45,9 +47,10 @@ export class Algo_Claster {
 		while (true) {
 			let rnext;
 			
-			rnext = gen_algo_it.next();
-
-			points = rnext.value ?? points;
+			deltaT = yield;
+			
+			for(let i = 0; i < this.speedMul; i++)
+				points = (rnext = gen_algo_it.next()).value ?? points;
 
 			for (let i = 0; i < points.length; i++) {
 				let point  = points[i];
@@ -65,17 +68,16 @@ export class Algo_Claster {
 
 			if (this.ondraw instanceof Function)
 				this.ondraw.call(this, deltaT, ctx);
-
-			deltaT = yield;
 		}
 
 		if (this.onend instanceof Function)
 			this.onend.call(this);
 	}
 
-	*k_means(count_claster) {//count_claster - количество кластеров
+	*k_means(input, count_claster) {//count_claster - количество кластеров
 		// let matrix_output = new Matrix(this.width, this.height, 0);
 		let centre_claster = [];
+		let points = input;
 
 		for (let i = 0; i < count_claster; i++) {//выбор начальных центров
 			centre_claster[i] = {
@@ -89,16 +91,16 @@ export class Algo_Claster {
 		let near_claster = 0;
 		while (check == true) {
 			check = false;
-			for (let i = 0; i < this.points.length; i++) {//раскидываем точки по класстерам
+			for (let i = 0; i < points.length; i++) {//раскидываем точки по класстерам
 				min_dist = Infinity;
 				near_claster = 0;
 				for (let j = 0; j < centre_claster.length; j++) {
-					if (this['_get_dist_' + this.dist_name](this.points[i], centre_claster[j]) < min_dist) {
-						min_dist = this['_get_dist_' + this.dist_name](this.points[i], centre_claster[j]);
+					if (this['_get_dist_' + this.dist_name](points[i], centre_claster[j]) < min_dist) {
+						min_dist = this['_get_dist_' + this.dist_name](points[i], centre_claster[j]);
 						near_claster = j;
 					}
 				}
-				this.points[i].claster = near_claster + 1;
+				points[i].claster = near_claster + 1;
 			}
 			let min_x = Infinity;
 			let max_x = 0;
@@ -109,12 +111,12 @@ export class Algo_Claster {
 				max_x = 0;
 				min_y = Infinity;
 				max_y = 0;
-				for (let j = 0; j < this.points.length; j++) {
-					if (this.points[j].claster == i + 1) {
-						if (this.points[j].x < min_x) min_x = this.points[j].x;
-						if (this.points[j].x > max_x) max_x = this.points[j].x;
-						if (this.points[j].y < min_y) min_y = this.points[j].y;
-						if (this.points[j].y > max_y) max_y = this.points[j].y;
+				for (let j = 0; j < points.length; j++) {
+					if (points[j].claster == i + 1) {
+						if (points[j].x < min_x) min_x = points[j].x;
+						if (points[j].x > max_x) max_x = points[j].x;
+						if (points[j].y < min_y) min_y = points[j].y;
+						if (points[j].y > max_y) max_y = points[j].y;
 					}
 				}
 				if (centre_claster[i].x != Math.floor((min_x + max_x) / 2) || centre_claster[i].y != Math.floor((min_y + max_y) / 2)) {
@@ -139,37 +141,40 @@ export class Algo_Claster {
 				}
 			}
 			*/
-			yield this.points;
+			yield points;
 		}
 		
 		// return this.points;
 	}
 
-	*agglomerative(count_claster) {//необязательный
+	*agglomerative(input, count_claster) {//необязательный
 		let min = 0;
+		let points = input;
 		if(count_claster==undefined){
 			count_claster=3;
 		}
-		for(let i=0;i<this.points.length;i++){
-			this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+		for(let i=0;i<points.length;i++){
+			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
 		}
-		return this.points;
+		return points;
 	}
 
-	*connect_components(count_claster){
+	*connect_components(input, count_claster){
 		let min = 0;
-		for(let i=0;i<this.points.length;i++){
-			this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+		let points = input;
+		for(let i=0;i<points.length;i++){
+			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
 		}
-		return this.points;
+		return points;
 	}
 
-	*min_cover_tree(count_claster){
+	*min_cover_tree(input, count_claster){
 		let min = 0;
-		for(let i=0;i<this.points.length;i++){
-			this.points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+		let points = input;
+		for(let i=0;i<points.length;i++){
+			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
 		}
-		return this.points;
+		return points;
 	}
 	
 	changeDistFunc(name){
@@ -204,22 +209,22 @@ export class Algo_Claster {
 		this.count_claster = count;
 	}
 
-	_search_points() {
-		this.count_point = 0;
-		for (let i = 0; i < this.width; i++) {
-			for (let j = 0; j < this.height; j++) {
-				if (this.matrix_input[i][j] != 0) {
-					this.points[this.count_point] = {
-						x: i,
-						y: j,
-						claster: 0,
-					};
-					this.count_point++;
-					this.matrix_output[i][j] = -1;
-				}
-			}
-		}
-	}
+	// _search_points() {
+		// this.count_point = 0;
+		// for (let i = 0; i < this.width; i++) {
+			// for (let j = 0; j < this.height; j++) {
+				// if (this.matrix_input[i][j] != 0) {
+					// this.points[this.count_point] = {
+						// x: i,
+						// y: j,
+						// claster: 0,
+					// };
+					// this.count_point++;
+					// this.matrix_output[i][j] = -1;
+				// }
+			// }
+		// }
+	// }
 
 	_get_dist_Euclid(point1 = {}, point2 = {}) {
 		return ((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2) ** (1 / 2);
