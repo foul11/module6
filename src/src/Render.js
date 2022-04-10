@@ -527,7 +527,7 @@ export class CanvasRender{
 							{
 								type: 'horz',
 								radio: 'maze',
-								on: { radio: { click: (e) => { mazeType = (e.target).attr('data-type'); } } },
+								on: { radio: { click: (e) => { mazeType = $(e.target).attr('data-type'); } } },
 								child: [
 									{
 										type: 'radio',
