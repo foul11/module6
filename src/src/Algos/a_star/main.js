@@ -509,8 +509,6 @@ export class Algo_a_star{
 			
 
 		let edges = [];
-		height = height + 2;
-    	width = width + 2; // это чтобы не было строки и столбца полных стен при четной размерности
 
 		function addnode_hor(x, y){
 			let left = {x: x, y: y};
@@ -528,8 +526,8 @@ export class Algo_a_star{
 			edges.push({first: up, center: center, last: down});
 		}
 
-		for (let i = 0; i < height; i = i + 2)
-			for (let j = 0; j < width; j = j + 2){
+		for (let i = 0; i < height - 2; i = i + 2)
+			for (let j = 0; j < width - 2; j = j + 2){
 				addnode_hor(i, j);
 				addnode_vert(i, j);
 			}
@@ -552,18 +550,13 @@ export class Algo_a_star{
 			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1;
 
 			if (tree_id[a_id] !== tree_id[b_id]){
-				if (flag_a){
-					maze[a.x - 1][a.y - 1] = false;
-					yield {x: a.x - 1, y: a.y - 1, wall: false};
-				}
-				if (flag_b){
-					maze[b.x - 1][b.y - 1] = false;
-					yield {x: b.x - 1, y: b.y - 1, wall: false};
-				}
-				if (flag_c){
-					maze[c.x - 1][c.y - 1] = false;
-					yield {x: c.x - 1, y: c.y - 1, wall: false};
-				}
+				maze[a.x ][a.y] = false;
+				yield {x: a.x, y: a.y, wall: false};
+				maze[b.x][b.y] = false;
+				yield {x: b.x, y: b.y, wall: false};
+				maze[c.x][c.y] = false;
+				yield {x: c.x, y: c.y, wall: false};
+
 				edges.splice(index, 1);
 
 				let old_id = tree_id[b_id];
@@ -579,6 +572,7 @@ export class Algo_a_star{
 		}
 
 		return maze;
+    
 	}
 
 	_labirint_Xueta(){ //не работает
