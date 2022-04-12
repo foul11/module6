@@ -498,8 +498,10 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	*_labirint_Kruskal(){ //вроде роботоет
+	*_labirint_Kruskal(width, height){ //вроде роботоет
 		edges = [];
+		height = height + 2;
+    	width = width + 2; // это чтобы не было строки и столбца полных стен при четной размерности
 
 		function addnode_hor(x, y){
 			let left = {x: x, y: y};
@@ -538,15 +540,15 @@ export class Algo_a_star{
 			let b_id = b.y * height + b.x;
 			let flag_a = a.x > 0 && a.y > 0 && a.x < height - 1 && a.y < width - 1;
 			let flag_b = b.x > 0 && b.y > 0 && b.x < height - 1 && b.y < width - 1;
-			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1
+			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1;
 
 			if (tree_id[a_id] !== tree_id[b_id]){
 				if (flag_a)
-					yield {x: a.x, y: a.y, wall: false};
+					yield {x: a.x - 1, y: a.y - 1, wall: false};
 				if (flag_b)
-					yield {x: b.x, y: b.y, wall: false};
+					yield {x: b.x - 1, y: b.y - 1 , wall: false};
 				if (flag_c)
-					yield {x: c.x, y: c.y, wall: false};
+					yield {x: c.x - 1, y: c.y - 1, wall: false};
 				edges.splice(index, 1);
 
 				let old_id = tree_id[b_id];
