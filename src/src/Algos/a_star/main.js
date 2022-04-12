@@ -498,8 +498,17 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	*_labirint_Kruskal(width, height){ //вроде роботоет
-		edges = [];
+	*_labirint_Kruskal(width, height, cut_edge = 0){ //вроде роботоет
+		let maze = [];
+
+		for (let i = 0; i < height; i++){
+			maze[i] = [];
+			for (let j = 0; j < width; j++)
+				maze[i][j] = true;
+		}
+			
+
+		let edges = [];
 		height = height + 2;
     	width = width + 2; // это чтобы не было строки и столбца полных стен при четной размерности
 
@@ -525,7 +534,7 @@ export class Algo_a_star{
 				addnode_vert(i, j);
 			}
 			
-		tree_id = [];
+		let tree_id = [];
 
 		for (let i = 0; i < height*width; i++){
 			tree_id.push(i)
@@ -543,12 +552,18 @@ export class Algo_a_star{
 			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1;
 
 			if (tree_id[a_id] !== tree_id[b_id]){
-				if (flag_a)
+				if (flag_a){
+					maze[a.x - 1][a.y - 1] = false;
 					yield {x: a.x - 1, y: a.y - 1, wall: false};
-				if (flag_b)
-					yield {x: b.x - 1, y: b.y - 1 , wall: false};
-				if (flag_c)
+				}
+				if (flag_b){
+					maze[b.x - 1][b.y - 1] = false;
+					yield {x: b.x - 1, y: b.y - 1, wall: false};
+				}
+				if (flag_c){
+					maze[c.x - 1][c.y - 1] = false;
 					yield {x: c.x - 1, y: c.y - 1, wall: false};
+				}
 				edges.splice(index, 1);
 
 				let old_id = tree_id[b_id];
@@ -562,7 +577,8 @@ export class Algo_a_star{
 			else
 				edges.splice(index, 1);
 		}
-    
+
+		return maze;
 	}
 
 	_labirint_Xueta(){ //не работает
