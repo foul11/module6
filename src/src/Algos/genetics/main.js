@@ -7,15 +7,8 @@ export class Algo_Genetics {
 	matrix_adjacency = [];
 
 	constructor(input /* matrix */) {
-		// this.matrix_input = matrix;
-		// this.width = matrix.length;
-		// this.height = matrix[0].length;
-		// this.matrix_output = new Matrix(matrix.length, matrix[0].length, 0);
 		this.points = input;
-
-		// this._search_points();
 		this._set_matrix_adjacency();
-
 		this.iterateCount = 1000;
 
 		this.onstart = null;
@@ -85,8 +78,21 @@ export class Algo_Genetics {
 		let population_size = (this.points.length) ** 2;
 		let index_fp = Math.floor(Math.random() * this.points.length);//индекс стартовой точки
 		let population = [];
+		let counter=0;
+		population[0] = {
+			fp: index_fp,
+			route: [],
+			route_length: 0,
+		}
+		for (let i=0;i<this.points.length;i++){
+			if(i!=index_fp){
+				population[0].route[counter]=i;
+				counter++;
+			}
+		}
+		this._get_route_length(population[0]);
 
-		for (let i = 0; i < population_size; i++) {//генерируем популяцию
+		for (let i = 1; i < population_size; i++) {//генерируем популяцию
 			population[i] = {
 				fp: index_fp,//начальная точка
 				route: [],
@@ -109,6 +115,7 @@ export class Algo_Genetics {
 			}
 			this._get_route_length(population[i]);
 		}
+
 		this._sort_population(population);
 		let best_route = population[0].route_length;
 		let count_repeat = 0;
@@ -139,6 +146,7 @@ export class Algo_Genetics {
 						count_use_parent++;
 						let flag = Math.floor(Math.random() * (Math.floor(population[0].route.length / 2) - Math.floor(population[0].route.length / 4))) + Math.floor(population[0].route.length / 4);
 						this._crossover(parent1, parent2, descendants, flag);
+						this._crossover(parent2, parent1, descendants, flag);
 						parent1 = undefined;
 						parent2 = undefined;
 					}
@@ -150,10 +158,8 @@ export class Algo_Genetics {
 				if (probability < 30) {
 					this._mutation(descendants[i]);
 				}
+				this._get_route_length(descendants[i]);
 			}
-			
-			this._sort_population(population);
-
 			this._selection(population, descendants);
 			if(population[0].route_length<best_route){
 				best_route=population[0].route_length;
@@ -174,69 +180,41 @@ export class Algo_Genetics {
 	}
 
 	_crossover(parent1, parent2, descendants, flag) {//скрещивание
-		let child1 = {
+		let child = {
 			fp: parent1.fp,
 			route: [],
 			route_length: 0,
 		}
 		let check = [];
+		let count_check=0;
 		for (let i = 0; i < parent1.route.length + 1; i++) {
-			if (i == parent1.fp) check[i] = -1;
+			if (i === parent1.fp) {
+				check[i] = -1;
+				count_check++;
+			}
 			else check[i] = 0;
 		}
-		for (let i = 0; i <= flag; i++) {
-			child1.route.push(parent1.route[i]);
-			check[parent1.route[i]] = 1;
-		}
-		for (let i = flag; i < parent1.route.length; i++) {
-			if (check[parent2.route[i]] == 0) {
-				child1.route.push(parent2.route[i]);
+		for (let i = 0; i < parent1.route.length; i++) {
+			if(i<flag){
+				child.route.push(parent1.route[i]);
+				check[parent1.route[i]] = 1;
+				count_check++;
+			}else if(check[parent2.route[i]] === 0){
+				child.route.push(parent2.route[i]);
 				check[parent2.route[i]] = 1;
+				count_check++
 			}
 		}
 		for (let i = 0; i < flag; i++) {
-			if (check[parent2.route[i]] == 0) {
-				child1.route.push(parent2.route[i]);
+			if(count_check>=check.length) break;
+			if (check[parent2.route[i]] === 0) {
+				child.route.push(parent2.route[i]);
 				check[parent2.route[i]] = 1;
+				count_check++;
 			}
 		}
-		this._get_route_length(child1);
-		descendants.push(child1);
-
-		let child2 = {
-			fp: parent1.fp,
-			route: [],
-			route_length: 0,
-		}
-		for (let i = 0; i < parent1.route.length + 1; i++) {
-			if (i == parent1.fp) check[i] = -1;
-			else check[i] = 0;
-		}
-
-		for (let i = 0; i < parent1.route.length + 1; i++) {
-			if (i == parent1.fp) check[i] = -1;
-			else check[i] = 0;
-		}
-		for (let i = 0; i <= flag; i++) {
-			child2.route.push(parent2.route[i]);
-			check[parent2.route[i]] = 1;
-		}
-		for (let i = flag; i < parent1.route.length; i++) {
-			if (check[parent1.route[i]] == 0) {
-				child2.route.push(parent1.route[i]);
-				check[parent1.route[i]] = 1;
-			}
-		}
-		for (let i = 0; i < flag; i++) {
-			if (check[parent1.route[i]] == 0) {
-				child2.route.push(parent1.route[i]);
-				check[parent1.route[i]] = 1;
-			}
-		}
-		this._get_route_length(child2);
-		descendants.push(child2);
+		descendants.push(child);
 	}
-
 
 	_mutation(descendant) {//мутация
 		let flag1 = Math.floor(Math.random() * (descendant.route.length-2));//Math.floor(Math.random() * (max - min)) + min
@@ -249,57 +227,21 @@ export class Algo_Genetics {
 			flag1++;
 			flag2--;
 		}
-		this._get_route_length(descendant);
-	}
-	 /*
-	_mutation(descendant) {//мутиция
-		let temp;
-		let flag1 = Math.floor(Math.random() * descendant.length);
-		let flag2 = Math.floor(Math.random() * descendant.length);
-		temp = descendant[flag1];
-		descendant[flag1] = descendant[flag2];
-		descendant[flag2] = temp;
-	}
-	*/
-	_selection(population, descendants) {//селекция
-		this._sort_population(descendants);
-		for (let i = 0; i < descendants.length; i++) {
-			if (descendants[i].route_length < population[population.length - 1].route_length) {
-				//population[population.length-1]=descendants[i];
-				population[population.length - 1].fp = descendants[i].fp;
-				population[population.length - 1].route_length = descendants[i].route_length;
-				for (let j = 0; j < descendants[i].route.length; j++) {
-					population[population.length - 1].route[j] = descendants[i].route[j];
-				}
-				this._sort_population(population);
-			}else{
-				break;
-			}
-		}
-		//descendants = undefined;
-		descendants = [];
 	}
 
-	_search_points() {
-		this.count_point = 0;
-		for (let i = 0; i < this.width; i++) {
-			for (let j = 0; j < this.height; j++) {
-				if (this.matrix_input[i][j] != 0) {
-					this.points[this.count_point] = {
-						x: i,
-						y: j,
-						seq_num: 0,//порядковый номер в маршруте
-					};
-					this.count_point++;
-					this.matrix_output[i][j] = -1;
-				}
-			}
+	_selection(population, descendants) {//селекция
+		for (let i = 0; i < descendants.length; i++) {
+			population.push(descendants[i]);
 		}
+		this._sort_population(population);
+		for(let i=0;i<descendants.length;i++){
+			population.pop();
+		}
+		descendants = [];
 	}
 
 	_get_dist(point1 = {}, point2 = {}) {
 		let res;
-		//res = Math.floor(((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2) ** (1 / 2));
 		res = ((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2) ** (1 / 2);
 		return res;
 	}
@@ -308,11 +250,9 @@ export class Algo_Genetics {
 		this.points.sort(function (a, b) {
 			return a.id - b.id
 		});
-
-		this.matrix_adjacency = []; //new Matrix(this.points.length, this.points.length, 0);
+		this.matrix_adjacency = [];
 		for (let i = 0; i < this.points.length; i++) {
 			this.matrix_adjacency[i] = [];
-			
 			for (let j = 0; j < this.points.length; j++) {
 				this.matrix_adjacency[i][j] = this._get_dist(this.points[i], this.points[j]);
 			}

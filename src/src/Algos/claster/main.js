@@ -75,7 +75,6 @@ export class Algo_Claster {
 	}
 
 	*k_means(input, count_claster) {//count_claster - количество кластеров
-		// let matrix_output = new Matrix(this.width, this.height, 0);
 		let centre_claster = [];
 		let points = input;
 
@@ -120,59 +119,108 @@ export class Algo_Claster {
 					}
 				}
 				if (centre_claster[i].x != Math.floor((min_x + max_x) / 2) || centre_claster[i].y != Math.floor((min_y + max_y) / 2)) {
-					// matrix_output[centre_claster[i].x][centre_claster[i].y] = 0;
 					centre_claster[i].x = Math.floor((min_x + max_x) / 2);
 					centre_claster[i].y = Math.floor((min_y + max_y) / 2);
 					check = true;
 				}
 			}
-			/*
-			for (let i = 0; i < this.points.length; i++) {//заполняем выходную матрицу
-				matrix_output[this.points[i].x][this.points[i].y] = this.points[i].claster;
-			}
-
-			for (let i = 0; i < centre_claster.length; i++) {//отмечаем/затираем центры
-				if (check == true) {
-					matrix_output[centre_claster[i].x][centre_claster[i].y] = -1 - i;
-				} else {
-					if (matrix_output[centre_claster[i].x][centre_claster[i].y] < 0) {
-						matrix_output[centre_claster[i].x][centre_claster[i].y] = 0;
-					}
-				}
-			}
-			*/
 			yield points;
 		}
-		
-		// return this.points;
 	}
 
 	*agglomerative(input, count_claster) {//необязательный
-		let min = 0;
 		let points = input;
 		if(count_claster==undefined){
 			count_claster=3;
 		}
+
 		for(let i=0;i<points.length;i++){
-			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+			//points[i].claster=Math.floor(Math.random() * (count_claster+1));
+			points[i].claster=1;
 		}
+
 		return points;
 	}
 
 	*connect_components(input, count_claster){
-		let min = 0;
 		let points = input;
-		for(let i=0;i<points.length;i++){
-			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+		let matrix_adjacency=this._set_matrix_adjacency(points);
+		let checkPoints = [];
+		let count_comp=1;
+		let count_repeat=1;
+		let edges = [];
+		let count_edges = 0;
+		for(let i=0;i<matrix_adjacency.length;i++){
+			for(let j=i;j<matrix_adjacency.length;j++){
+				if(matrix_adjacency[i][j]>0){
+					edges[count_edges]={
+						v1: i,
+						v2: j,
+						len: matrix_adjacency[i][j],
+					};
+					count_edges++;
+				}
+			}
+		}
+		edges.sort(function (a, b) {
+			return a.len - b.len
+		});
+		let temp;
+		if(count_claster<points.length){
+			while (count_comp<count_claster){
+				temp=edges.pop();
+				matrix_adjacency[temp.v1][temp.v2] = 0;
+				matrix_adjacency[temp.v2][temp.v1] = 0;
+
+				if(count_repeat>count_claster){
+					checkPoints = this._searchComp(matrix_adjacency);
+					let max_comp=checkPoints[0];
+					let max_comp_i=0;
+					for(let i=1;i<checkPoints.length;i++){
+						if(checkPoints[i]>max_comp){
+							max_comp=checkPoints[i];
+							max_comp_i=i;
+						}
+					}
+					count_comp=max_comp;
+				}
+				count_repeat++;
+			}
+		}else{
+			checkPoints = this._searchComp(matrix_adjacency);
+
+		}
+		for(let i=0;i<checkPoints.length;i++){
+			points[i].claster=checkPoints[i];
 		}
 		return points;
 	}
 
 	*min_cover_tree(input, count_claster){
-		let min = 0;
 		let points = input;
-		for(let i=0;i<points.length;i++){
-			points[i].claster=Math.floor(Math.random() * (count_claster+1 - min)) + min;
+		let matrix_adjacency=this._set_matrix_adjacency(points);
+		matrix_adjacency = this._search_tree(matrix_adjacency);
+		let count_repeat=1;
+		while (count_repeat<count_claster){
+			let max = 0;
+			let max_i = 0;
+			let max_j = 0;
+			for(let i=0;i<matrix_adjacency.length;i++){
+				for(let j=0;j<matrix_adjacency.length;j++){
+					if(matrix_adjacency[i][j]>max){
+						max=matrix_adjacency[i][j];
+						max_i=i;
+						max_j=j;
+					}
+				}
+			}
+			matrix_adjacency[max_i][max_j] = 0;
+			matrix_adjacency[max_j][max_i] = 0;
+			count_repeat++;
+		}
+		let checkPoints = this._searchComp(matrix_adjacency);
+		for(let i=0;i<checkPoints.length;i++){
+			points[i].claster=checkPoints[i];
 		}
 		return points;
 	}
@@ -240,5 +288,104 @@ export class Algo_Claster {
 	
 	_get_dist_Chebyshev(point1 = {}, point2 = {}) {
 		return Math.max(Math.abs(point2.x - point1.x), Math.abs(point2.y - point1.y));
+	}
+
+	_set_matrix_adjacency(points) {
+		let matrix_adjacency = [];
+		for (let i = 0; i < points.length; i++) {
+			matrix_adjacency[i] = [];
+			for (let j = 0; j < points.length; j++) {
+				matrix_adjacency[i][j] = this['_get_dist_' + this.dist_name](points[i], points[j]);
+			}
+		}
+		return matrix_adjacency;
+	}
+
+	_search_tree(matrix){
+		let countV=matrix.length;
+		let ostov = [];
+		let checkV = [];
+		for (let i = 0; i < countV; i++) {
+			checkV[i] = 0;
+			ostov[i] = [];
+		}
+		for (let i = 0; i < countV; i++) {
+			for (let j = 0; j < countV; j++) {
+				ostov[i][j] = 0;
+			}
+		}
+		let count = 0;
+		let min = 1000000;
+		let min_i;
+		let min_j;
+		let result = 0;
+		checkV[0] = 1;
+		count++;
+
+		while (count != countV) {
+			min = 1000000;
+			min_i = 0;
+			min_j = 0;
+			for (let i = 0; i < countV; i++) {
+				if (checkV[i]!=0) {
+					for (let j = 0; j < countV; j++) {
+						if (checkV[j]==0 && matrix[i][j] > 0) {
+							if (matrix[i][j] < min) {
+								min = matrix[i][j];
+								min_i = i;
+								min_j = j;
+							}
+						}
+					}
+				}
+			}
+			result += min;
+			ostov[min_i][min_j] = min;
+			ostov[min_j][min_i] = min;
+			count++;
+			checkV[min_j] = 1;
+		}
+		return ostov;
+	}
+
+	_breadthSearch(matrix, startV, flag, checkV){
+		let countV=matrix.length;
+		let q = [];
+		let count = 0;
+		q.push(startV);
+		checkV[startV] = flag;
+		count++;
+		let currentV;
+		while (q.length>0) {
+			currentV = q.shift();
+			for (let j = 0; j < countV; j++) {
+				if (matrix[currentV][j] > 0 && checkV[j] === 0) {
+					q.push(j);
+					checkV[j] = flag;
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	_searchComp(matrix){
+		let countV = matrix.length;
+		let checkV = [];
+		for (let i = 0; i < countV; i++) {
+			checkV[i] = 0;
+		}
+		let countCheckV = 0;
+		let countComp = 0;
+		let q = [];
+		for (let i = 0; i < countV; i++) {
+			if (checkV[i] === 0) {
+				countComp++;
+				q.push(this._breadthSearch(matrix, i, countComp, checkV));
+				countCheckV += q[q.length-1];
+			}
+			if (countCheckV == countV) break;
+		}
+		return checkV;
 	}
 }

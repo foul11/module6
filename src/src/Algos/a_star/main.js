@@ -503,66 +503,81 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	_labirint_Kruskal(){ //хуета
-		for (let i = 0; i < this.height; i++){
-			for (let j = 0; j < this.width; j++){
-				this.walls[j][i] = 1;
-			}
+	*_labirint_Kruskal(width, height, cut_edge = 0){ //вроде роботоет
+		let maze = [];
+
+		for (let i = 0; i < height; i++){
+			maze[i] = [];
+			for (let j = 0; j < width; j++)
+				maze[i][j] = true;
 		}
+			
 
 		let edges = [];
 
-		for (let i = 1; i < this.height - 3; i++){
-			for (let j = 1; j < this.width - 3; j++){
-				edges.push([new Point(j, i), new Point(j + 1, i), new Point(j + 2, i)]);
-				edges.push([new Point(j, i), new Point(j, i + 1), new Point(j, i + 2)]);
-			}
-		}
-		console.log(edges);
-		function delete_walls(matrix, edge){
-			matrix[edge[0].w][edge[0].h] = 0;
-			matrix[edge[1].w][edge[1].h] = 0;
-			matrix[edge[2].w][edge[2].h] = 0;
+		function addnode_hor(x, y){
+			let left = {x: x, y: y};
+			let center = {x: x + 1, y: y};
+			let right = {x: x + 2, y: y};
+
+			edges.push({first: left, center: center, last: right});
 		}
 
-		function check(previous, current){
-			for (let i = 0; i < 3; i++){
-				for (let j = 0; j < 3; j++){
-					if (i !== 1 && j !== 1 && previous[i].h === current[j].h && previous[i].w === current[j].w){
-						return false;
-					}
+		function addnode_vert(x, y){
+			let up = {x: x, y: y};
+			let center = {x: x, y: y + 1};
+			let down = {x: x, y: y + 2};
+
+			edges.push({first: up, center: center, last: down});
+		}
+
+		for (let i = 0; i < height - 2; i = i + 2)
+			for (let j = 0; j < width - 2; j = j + 2){
+				addnode_hor(i, j);
+				addnode_vert(i, j);
+			}
+			
+		let tree_id = [];
+
+		for (let i = 0; i < height*width; i++){
+			tree_id.push(i)
+		}
+
+		while (edges.length > 0){
+			let index = getRandomInt(0, edges.length)
+			let a = edges[index].first;
+			let b = edges[index].last;
+			let c = edges[index].center;
+			let a_id = a.y * height + a.x;
+			let b_id = b.y * height + b.x;
+			let flag_a = a.x > 0 && a.y > 0 && a.x < height - 1 && a.y < width - 1;
+			let flag_b = b.x > 0 && b.y > 0 && b.x < height - 1 && b.y < width - 1;
+			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1;
+
+			if (tree_id[a_id] !== tree_id[b_id]){
+				maze[a.x ][a.y] = false;
+				yield {x: a.x, y: a.y, wall: false};
+				maze[b.x][b.y] = false;
+				yield {x: b.x, y: b.y, wall: false};
+				maze[c.x][c.y] = false;
+				yield {x: c.x, y: c.y, wall: false};
+
+				edges.splice(index, 1);
+
+				let old_id = tree_id[b_id];
+				let new_id = tree_id[a_id];
+
+				for (let j = 0; j < height*width; j++){
+					if (tree_id[j] === old_id)
+						tree_id[j] = new_id;
 				}
 			}
-			return true;
-		}
-
-		let index = getRandomInt(0, edges.length);
-		delete_walls(this.walls, edges[index]);
-		let previous = edges[index];
-		edges.splice(index, 1);
-		
-		let count = 0;
-		let max = edges.length;
-
-		while (true){
-			this.print_matrix(this.walls);
-			let index = getRandomInt(0, edges.length);
-			console.log(index);
-			let current = edges[index];
-
-			if (check(previous, current)){
-				delete_walls(this.walls,edges[index]);
-				previous = edges[index];
+			else
 				edges.splice(index, 1);
-			}
-
-			count++;
-			if (count === max){
-				break;
-			}
 		}
 
-		this.print_matrix(this.walls);
+		return maze;
+    
 	}
 
 	_labirint_Xueta(){ //не работает
