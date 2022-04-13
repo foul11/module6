@@ -95,10 +95,10 @@ export class Algo_a_star{
 		let i = 0;
 		
 		while(true){
-			if(!(++i % this.speedMul)) 
+			if(!(++i % this.speedMul)){
 				deltaT = yield;
-			
-			UCvsUpdater(deltaT);
+				UCvsUpdater(deltaT);
+			}
 			
 			if (this.queue.length == 0)
 				continue;
@@ -140,6 +140,9 @@ export class Algo_a_star{
 					break;
 					
 				case Algo_a_star.QTYPE.A_STAR:
+					let EndPV = this.grid[curr.args[2]][curr.args[3]];
+					this.grid[curr.args[2]][curr.args[3]] = false;
+					
 					while(!(next = curr.gen.next()).done){
 						if(!(++i % this.speedMul)) 
 							deltaT = yield;
@@ -162,6 +165,8 @@ export class Algo_a_star{
 						if(!(i % this.speedMul))
 							UCvsUpdater(deltaT);
 					}
+					
+					this.grid[curr.args[2]][curr.args[3]] = EndPV;
 					
 					if(this.forceStop)
 						break;
@@ -233,11 +238,11 @@ export class Algo_a_star{
 			default: throw Error('labirint name Error');
 		}
 		
-		this.queue.push({ type: Algo_a_star.QTYPE.LABIRINT, gen: lab });
+		this.queue.push({ type: Algo_a_star.QTYPE.LABIRINT, gen: lab, args: arguments });
 	}
 	
 	a_star(x1, y1, x2, y2){
-		this.queue.push({ type: Algo_a_star.QTYPE.A_STAR, gen: this._a_star({ x: x1, y: y1}, { x: x2, y: y2}) });
+		this.queue.push({ type: Algo_a_star.QTYPE.A_STAR, gen: this._a_star({ x: x1, y: y1}, { x: x2, y: y2}), args: arguments });
 	}
 
 	*_a_star(start, end){

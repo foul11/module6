@@ -26,6 +26,8 @@ export class UCanvas{
 		P2R: 3,
 		SP2P: 4,
 		SP2R: 5,
+		P2B: 6,
+		SP2B: 7,
 	}
 	
 	static ALIGN = {
@@ -39,10 +41,6 @@ export class UCanvas{
 	
 	static #draw_id = 0;
 	
-	/*
-		TODO: Ставить точки по событию mclick, а не только по mmove
-	*/
-	
 	constructor(width, height){
 		// this.onstart = null;
 		// this.onend = null;
@@ -55,31 +53,27 @@ export class UCanvas{
 		this.ongridchange = null;
 		
 		this.init(width, height);
+		this.saveStack = [];
 		
-		// this.MaxUndo = 100;
 		this.currMode = UCanvas.MODES.VECT;
 	}
 	
 	init(width, height){
 		this._createCanvas('', width, height, null, true);
-		// this._createCanvas('Perma', width, height, 'black', true);
 		
 		this.width = width;
 		this.height = height;
 		
-		// this._refillMap(width, height);
-		
 		this.Undo = [];
 		this.currUndo = [];
 		this.currUndoI = 0;
-		// this.UndoReset = [];
 		
 		this.drawHashMap = {};
 		
-		this.gridOffset = { x: 0, y: 0 }; /* TODO: adds to resize and save and restore */
+		this.gridOffset = { x: 0, y: 0 };
 		this.grid = { x: 1, y: 1 };
 		this.isGridDraw = false;
-		this.gridColor = '#FFF';
+		this.gridColor = '#ffffff';
 		this.gridWidth = 1;
 		
 		this.brushSelect = 'Erase';
@@ -92,24 +86,7 @@ export class UCanvas{
 		
 		this.arcStart = 0;
 		this.arcEnd = Math.PI * 2;
-		
-		this.saveStack = [];
 	}
-	
-	// _refillMap(width, height){
-		// this.Map1 = [];
-		
-		// for(let x = 0; x < width; x++){
-			// this.Map1.push([])
-			// let Map1 = this.Map1[x];
-			
-			// for(let y = 0; y < height; y++){
-				// Map1.push({
-					// inObj: {},
-				// });
-			// }
-		// }
-	// }
 	
 	*update(){
 		if(this.onstart instanceof Function)
@@ -129,16 +106,6 @@ export class UCanvas{
 				this.onpredraw.call(this, deltaT, ctx);
 			
 			ctx.save();
-				// for(let i = 0; i < this.Undo.length; i++){
-					// if(i >= this.currUndoI) continue;
-					
-					// for(let j in this.Undo[i])
-						// this._draw(ctx, this.Undo[i][j]);
-				// }
-				
-				// for(let i in this.currUndo)
-					// this._draw(ctx, this.currUndo[i]);
-				
 				if(this.isGridDraw)
 					this._draw_grid(ctx, this.grid, this.gridColor, this.gridWidth);
 				
@@ -205,7 +172,9 @@ export class UCanvas{
 		ctx.restore();
 	}
 	
-	_draw(ctx, parm){
+	_draw(ctx, parm, aspScaler = null){
+		if(aspScaler === null) aspScaler = [1, 1];
+		
 		switch(parm.type){
 			case UCanvas.RECT.NONE:
 				break;
@@ -215,8 +184,10 @@ export class UCanvas{
 				ctx.lineWidth = parm.size;
 				
 				ctx.beginPath();
-					ctx.moveTo(parm.x1, parm.y1);
-					ctx.lineTo(parm.x2, parm.y2);
+					// ctx.moveTo(parm.x1, parm.y1);
+					// ctx.lineTo(parm.x2, parm.y2);
+					ctx.moveTo(parm.x1 * aspScaler[0], parm.y1 * aspScaler[1]);
+					ctx.lineTo(parm.x2 * aspScaler[0], parm.y2 * aspScaler[1]);
 				ctx.stroke();
 				break;
 				
@@ -225,7 +196,8 @@ export class UCanvas{
 				ctx.lineWidth = parm.outSize;
 				
 				ctx.beginPath();
-					ctx.arc(parm.x1, parm.y1, parm.size, parm.arcStart, parm.arcEnd);
+					// ctx.arc(parm.x1, parm.y1, parm.size, parm.arcStart, parm.arcEnd);
+					ctx.ellipse(parm.x1 * aspScaler[0], parm.y1 * aspScaler[1], parm.size * aspScaler[0], parm.size * aspScaler[1], 0, parm.arcStart, parm.arcEnd);
 				ctx.stroke();
 				break;
 				
@@ -234,7 +206,8 @@ export class UCanvas{
 				
 				ctx.beginPath();
 					ctx.moveTo(parm.x1, parm.y1);
-					ctx.arc(parm.x1, parm.y1, parm.size, parm.arcStart, parm.arcEnd);
+					// ctx.arc(parm.x1, parm.y1, parm.size, parm.arcStart, parm.arcEnd);
+					ctx.ellipse(parm.x1 * aspScaler[0], parm.y1 * aspScaler[1], parm.size * aspScaler[0], parm.size * aspScaler[1], 0, parm.arcStart, parm.arcEnd);
 				ctx.fill();
 				break;
 				
@@ -242,13 +215,15 @@ export class UCanvas{
 				ctx.strokeStyle = parm.color;
 				ctx.lineWidth = parm.outSize;
 				
-				ctx.strokeRect(parm.x1 - Math.floor(parm.s1 / 2), parm.y1 - Math.floor(parm.s2 / 2), parm.s1, parm.s2);
+				// ctx.strokeRect(parm.x1 - Math.floor(parm.s1 / 2), parm.y1 - Math.floor(parm.s2 / 2), parm.s1, parm.s2);
+				ctx.strokeRect((parm.x1 - Math.floor(parm.s1 / 2))  * aspScaler[0], (parm.y1 - Math.floor(parm.s2 / 2))  * aspScaler[1], parm.s1 * aspScaler[0], parm.s2 * aspScaler[1]);
 				break;
 				
 			case UCanvas.RECT.FBOX:
 				ctx.fillStyle = parm.color;
 				
-				ctx.fillRect(parm.x1 - Math.floor(parm.s1 / 2), parm.y1 - Math.floor(parm.s2 / 2), parm.s1, parm.s2);
+				// ctx.fillRect(parm.x1 - Math.floor(parm.s1 / 2), parm.y1 - Math.floor(parm.s2 / 2), parm.s1, parm.s2);
+				ctx.fillRect((parm.x1 - Math.floor(parm.s1 / 2)) * aspScaler[0], (parm.y1 - Math.floor(parm.s2 / 2)) * aspScaler[1], parm.s1 * aspScaler[0], parm.s2 * aspScaler[1]);
 				break;
 				
 			case UCanvas.RECT.STEXT:
@@ -258,7 +233,8 @@ export class UCanvas{
 				ctx.textAlign = parm.align & UCanvas.ALIGN.LEFT ? (parm.align & UCanvas.ALIGN.RIGTH ? 'center' : 'left') : (parm.align & UCanvas.ALIGN.RIGTH ? 'right' : '');
 				ctx.textBaseline = parm.align & UCanvas.ALIGN.TOP ? (parm.align & UCanvas.ALIGN.BOTTOM ? 'middle' : 'top') : (parm.align & UCanvas.ALIGN.RIGTH ? 'bottom' : '');
 				
-				ctx.strokeText(parm.text, parm.x1, parm.y1);
+				// ctx.strokeText(parm.text, parm.x1, parm.y1);
+				ctx.strokeText(parm.text, parm.x1 * aspScaler[0], parm.y1 * aspScaler[1]);
 				break;
 				
 			case UCanvas.RECT.FTEXT:
@@ -268,11 +244,13 @@ export class UCanvas{
 				ctx.textAlign = parm.align & UCanvas.ALIGN.LEFT ? (parm.align & UCanvas.ALIGN.RIGTH ? 'center' : 'left') : (parm.align & UCanvas.ALIGN.RIGTH ? 'right' : '');
 				ctx.textBaseline = parm.align & UCanvas.ALIGN.TOP ? (parm.align & UCanvas.ALIGN.BOTTOM ? 'middle' : 'top') : (parm.align & UCanvas.ALIGN.RIGTH ? 'bottom' : '');
 				
-				ctx.fillText(parm.text, parm.x1, parm.y1);
+				// ctx.fillText(parm.text, parm.x1, parm.y1);
+				ctx.fillText(parm.text, parm.x1 * aspScaler[0], parm.y1 * aspScaler[1]);
 				break;
 				
 			case UCanvas.RECT.IMAGE:
-				ctx.drawImage(parm.data, parm.x1 - parm.x2, parm.y1 - parm.y2);
+				// ctx.drawImage(parm.data, parm.x1 - parm.x2, parm.y1 - parm.y2);
+				ctx.drawImage(parm.data, (parm.x1 - parm.x2) * aspScaler[0], (parm.y1 - parm.y2) * aspScaler[1]);
 				break;
 				
 			default:
@@ -313,34 +291,13 @@ export class UCanvas{
 		return [60*(h<0?h+6:h), v&&c/v, v];
 	}
 	
-	/*setMode(mode){
+	/*setMode(mode){ // not realised
 		this.currMode = mode;
 	}*/
 	
 	_isOutMap(x, y){
 		return x < 0 || y < 0 || Math.floor(x) > (this.width - 1) || Math.floor(y) > (this.height - 1);
 	}
-	
-	// _trace(x1, y1, size, callback = null){
-		// let first = null;
-		
-		// Figure.circle(x1, y1, size, function(x, y){
-			// if(this._isOutMap(x, y)) return;
-			
-			// if(callback instanceof Function){
-				// for(let i in this.Map1[x][y].inObj){
-					// callback.call(this, x, y, i, this.Map1[x][y].inObj[i]);
-				// }
-			// }else{
-				// for(let item of this.Map1[x][y].inObj){
-					// first = item;
-					// return false;
-				// }
-			// }
-		// }.bind(this));
-		
-		// return first;
-	// }
 	
 	_cumbacker(callback){
 		let draws = {};
@@ -434,9 +391,6 @@ export class UCanvas{
 	}
 	
 	_spawnChecker(rectType, x1, y1, size, checkType){
-		if(size instanceof Object)
-			size = (size[0] + size[1]) / 2;
-		
 		switch(checkType){
 			case UCanvas.CHECK.P2P:
 			case UCanvas.CHECK.SP2P:
@@ -451,16 +405,28 @@ export class UCanvas{
 				
 			case UCanvas.CHECK.P2R:
 			case UCanvas.CHECK.SP2R:
+				if(size instanceof Object)
+					size = (size[0] + size[1]) / 4;
+				
 				if(this._cumbacker(function(i, j, obj){
-					// if(rectType === UCanvas.RECT.FBOX || rectType === UCanvas.RECT.SBOX){
-						// if(Math.abs(obj.x1 - x1) < Math.floor((obj.s1 + size[0]) / 2) && Math.abs(obj.y1 - y1) < Math.floor((obj.s2 + size[1]) / 2) &&
-							// (checkType === UCanvas.CHECK.SP2P && obj.type === rectType || true))
-							// return false;
-					// }else{
-						if(Math.abs(obj.x1 - x1) + Math.abs(obj.y1 - y1) < (obj.size ?? 0 + size) &&
-							(checkType === UCanvas.CHECK.SP2P && obj.type === rectType || true))
-							return false;
-					// }
+					if(Math.abs(obj.x1 - x1) ** 2 + Math.abs(obj.y1 - y1) ** 2 < ((obj.size ?? ((obj.s1 + obj.s1) / 4)) + size) ** 2 &&
+						(checkType === UCanvas.CHECK.SP2P && obj.type === rectType || true))
+						return false;
+				}) === false)
+					return false;
+				return true;
+				break;
+				
+				
+			case UCanvas.CHECK.P2B:
+			case UCanvas.CHECK.SP2B:
+				if(!(size instanceof Object))
+					size = [size * 2, size * 2];
+				
+				if(this._cumbacker(function(i, j, obj){
+					if(Math.abs(obj.x1 - x1) < (((obj.s1 ?? (obj.size * 2)) + size[0]) / 2) && Math.abs(obj.y1 - y1) < (((obj.s2 ?? (obj.size * 2)) + size[1]) / 2) &&
+						(checkType === UCanvas.CHECK.SP2P && obj.type === rectType || true))
+						return false;
 				}) === false)
 					return false;
 				return true;
@@ -542,6 +508,10 @@ export class UCanvas{
 		
 		if(this.onbrush instanceof Function)
 			this.onbrush.call(this, obj, Math.floor((obj.x1 - this.gridOffset.x) / this.grid.x), Math.floor((obj.y1 - this.gridOffset.y) / this.grid.y));
+		
+		if(obj.type !== UCanvas.RECT.DELETE)
+			if(obj.onconstruct instanceof Function)
+				obj.onconstruct.call(this, obj);
 	}
 	
 	brushStrokeText(x1, y1, text, font, align, outSize, color, check = UCanvas.CHECK.NONE, extend = {}){
@@ -692,7 +662,7 @@ export class UCanvas{
 		let ret = false;
 		
 		this._cumbacker(function(i, j, obj){
-			if(Math.abs(obj.x1 - x1) ** 2 + Math.abs(obj.y1 - y1) ** 2 < ((obj.size ?? 0) + size) ** 2){
+			if(Math.abs(obj.x1 - x1) ** 2 + Math.abs(obj.y1 - y1) ** 2 < (size) ** 2){
 				this.currUndo.push(Object.assign({ id: UCanvas.#draw_id++, delId: obj.id, link: obj, type: UCanvas.RECT.DELETE }, extend));
 				this._onBrushCallback(this.currUndo[this.currUndo.length - 1]);
 				
@@ -849,45 +819,23 @@ export class UCanvas{
 		}
 	}
 	
-	resize(width, height){ /* TODO: delete object without screen */
-		let gridOffset = this.gridOffset;
-		let grid = this.grid;
-		let isGridDraw = this.isGridDraw;
-		let gridColor = this.gridColor;
-		let gridWidth = this.gridWidth;
-		
-		let brushSize = this.brushSize;
-		let brushWidth = this.brushWidth;
-		let brushColor = this.brushColor;
-		let brushSelect = this.brushSelect;
-		let brushText = this.brushText;
-		let brushFont = this.brushFont;
-		let brushAlign = this.brushAlign;
-		
-		let arcStart = this.arcStart;
-		let arcEnd = this.arcEnd;
-		
-		this.init(width, height);
-		this.setGridSize(grid.x, grid.y);
-		
-		this.isGridDraw = isGridDraw;
-		this.gridColor = gridColor;
-		this.gridWidth = gridWidth;
-		
-		this.brushSize = brushSize;
-		this.brushWidth = brushWidth;
-		this.brushColor = brushColor;
-		this.brushSelect = brushSelect;
-		this.brushText = brushText;
-		this.brushFont = brushFont;
-		this.brushAlign = brushAlign;
-		
-		this.arcStart = arcStart;
-		this.arcEnd = arcEnd;
+	resize(width, height){
+		this.clear();
+		this.save();
+			this.init(width, height);
+		this.restore();
+		this.setGridSize(this.grid.x, this.grid.y);
+		this.saveStack = [];
 	}
 	
 	clear(){
-		this._createCanvas('Perma', this.width, this.height, 'black', true);
+		this._cumbacker(function(i, j, obj){
+			this.currUndo.push(Object.assign({ id: UCanvas.#draw_id++, delId: obj.id, link: obj, type: UCanvas.RECT.DELETE }, { isClear: true }));
+			this._onBrushCallback(this.currUndo[this.currUndo.length - 1]);
+			
+			if(obj.ondestruct instanceof Function)
+				obj.ondestruct.call(this, obj);
+		});
 		
 		this.Undo = [];
 		this.currUndo = [];
@@ -897,16 +845,60 @@ export class UCanvas{
 			this.onclear.call(this);
 	}
 	
+	_undoCallbacker(delta){
+		for(let i = this.currUndoI - delta; i > this.currUndoI; i--){
+			let undos = this.Undo[i - 1];
+			
+			for(let j = undos.length; j--;){
+				let obj = undos[j];
+				
+				if(obj.type === UCanvas.RECT.DELETE){
+					this._onBrushCallback(obj.link);
+				}else{
+					if(obj.ondestruct instanceof Function)
+						obj.ondestruct.call(this, obj);
+					
+					this._onBrushCallback(Object.assign({ id: UCanvas.#draw_id++, delId: obj.id, link: obj, type: UCanvas.RECT.DELETE }, { isUndo: true }));
+				}
+			}
+		}
+		
+		for(let i = this.currUndoI - delta; i < this.currUndoI; i++){
+			let undos = this.Undo[i];
+			
+			for(let j = 0; j < undos.length; j++){
+				let obj = undos[j];
+				
+				if(obj.type === UCanvas.RECT.DELETE){
+					if(obj.link.ondestruct instanceof Function)
+						obj.link.ondestruct.call(this, obj.link);
+					
+					this._onBrushCallback(obj);
+				}else{
+					this._onBrushCallback(obj);
+				}
+			}
+		}
+	}
+	
 	undo(){
 		if(this.currUndo.length)
 			this.endUndo();
 		
+		let lCurr = this.currUndoI;
+		
 		this.currUndoI--;
 		this.currUndoI = Math.max(this.currUndoI, 0);
+		
+		this._undoCallbacker(this.currUndoI - lCurr);
 	}
 	
 	redo(){
+		let lCurr = this.currUndoI;
+		
 		this.currUndoI++;
 		this.currUndoI = Math.min(this.currUndoI, this.Undo.length);
+		
+		this._undoCallbacker(this.currUndoI - lCurr);
 	}
 }

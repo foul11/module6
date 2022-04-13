@@ -65,7 +65,6 @@ let tasks = {
 						// __CONFIG__: JSON.stringify(config),
 					// }),
 				],
-				
 				module: {
 					rules: [
 						{

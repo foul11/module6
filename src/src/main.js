@@ -30,12 +30,18 @@ $(function(){
 		Сплит экрана
 		
 		В хеадер добавить реквизиты для донатов (bitcoin, yandex, qiwi)
+		
+		допиливаю алгоритмы (a_star, clasters).
+		доделаваю нейронку (распознование нескольких образов).
+		доделаваю дизайн сайта.
+		доделаваю муравьев (тупа настройки добавить для каждого муравья и тп).
 	*/
 	
 	// $('[data-algo="ant"]').click();
 	// $('[data-algo="nn"]').click();
 	// $('[data-algo="claster"]').click();
 	// $('[data-algo="genetics"]').click();
-	$('[data-algo="a_star"]').click();
+	$('[data-algo="super_genetics"]').click();
+	// $('[data-algo="a_star"]').click();
 	// $('[data-algo="test_UCanvas"]').click();
 });

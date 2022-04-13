@@ -6,6 +6,11 @@ import { Config } from './Config.js';
 import { UCanvas } from './Algos/_helpers/UCanvas.js';
 import { Matrix } from './Algos/_helpers/Matrix.js';
 import { Algo_Genetics } from "./Algos/genetics/main";
+import { Algo_Super_Genetics } from "./Algos/super_genetics/main";
+
+// #if !__DEV__
+	const { drawHighlightedCode: drawHighlight } = require('canvas-syntax-highlight');
+// #endif
 
 export class CanvasRender{
 	constructor(ctx, width = null, height = null){
@@ -138,14 +143,14 @@ export class CanvasRender{
 						},
 						{
 							type: 'color',
-							value: '#555555',
+							value: UCvs.gridColor,
 							
 							on: { input: function(){ UCvs.setGridColor(this.value); }, },
 						},
 						{
 							type: 'checkbox',
 							value: 'Draw enable',
-							checked: true,
+							checked: UCvs.isGridDraw,
 							
 							on: { click: function(){ UCvs.setGridDraw(this.checked); } },
 						},
@@ -189,7 +194,7 @@ export class CanvasRender{
 				};
 			},
 			
-			SpeedMul(classes, callback = null){
+			SpeedMul(classes, max = 1000, callback = null){
 				return {
 					type: 'horz',
 					child: [
@@ -197,7 +202,7 @@ export class CanvasRender{
 							type: 'range',
 							value: 'Speed Multipliyer',
 							min: 1,
-							max: 1000,
+							max: max,
 							init: 1,
 							
 							on: { input: (e) => { classes.speedMul = parseInt(e.target.value); if(callback instanceof Function) callback.call(e.target, e); } },
@@ -287,7 +292,7 @@ export class CanvasRender{
 			
 			ret.setGridSize(20);
 			ret.setGridDraw(true);
-			ret.setGridColor('#555');
+			ret.setGridColor('#555555');
 			
 			ret.setBrushSelect('FillBox');
 			ret.setBrushColor('#555555');
@@ -305,10 +310,12 @@ export class CanvasRender{
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
 			
-			if(a_star.StartPoint) UCvs._draw(ctx, a_star.StartPoint);
-			if(a_star.StartPointO) UCvs._draw(ctx, a_star.StartPointO);
-			if(a_star.EndPoint) UCvs._draw(ctx, a_star.EndPoint);
-			if(a_star.EndPointO) UCvs._draw(ctx, a_star.EndPointO);
+			let asp = [render.width / this.width, render.height / this.height];
+			
+			if(a_star.StartPoint) UCvs._draw(ctx, a_star.StartPoint, asp);
+			if(a_star.StartPointO) UCvs._draw(ctx, a_star.StartPointO, asp);
+			if(a_star.EndPoint) UCvs._draw(ctx, a_star.EndPoint, asp);
+			if(a_star.EndPointO) UCvs._draw(ctx, a_star.EndPointO, asp);
 		}.bind(UCvs, this);
 		
 		let mazeType = 'prima';
@@ -332,11 +339,23 @@ export class CanvasRender{
 							a_star.StartPointO = UCvs.getById(a_star.StartPoint.id + 1);
 							
 							a_star.StartPoint.ondestruct = function(){
+								if(!this.StartPoint) return;
+								
 								this.StartPoint.type = UCanvas.RECT.NONE;
 								this.StartPointO.type = UCanvas.RECT.NONE;
 								
 								this.StartPoint = null;
 								this.StartPointO = null;
+							}.bind(a_star);
+							
+							a_star.StartPoint.onconstruct = function(obj){
+								if(this.StartPoint) return;
+								
+								this.StartPoint = obj;
+								this.StartPointO = UCvs.getById(obj.id + 1);
+								
+								this.StartPoint.type = UCanvas.RECT.FBOX;
+								this.StartPointO.type = UCanvas.RECT.SBOX;
 							}.bind(a_star);
 						UCvs.restore();
 					}
@@ -358,11 +377,23 @@ export class CanvasRender{
 							a_star.EndPointO = UCvs.getById(a_star.EndPoint.id + 1);
 							
 							a_star.EndPoint.ondestruct = function(){
+								if(!this.EndPoint) return;
+								
 								this.EndPoint.type = UCanvas.RECT.NONE;
 								this.EndPointO.type = UCanvas.RECT.NONE;
 								
 								this.EndPoint = null;
 								this.EndPointO = null;
+							}.bind(a_star);
+							
+							a_star.EndPoint.onconstruct = function(obj){
+								if(this.EndPoint) return;
+								
+								this.EndPoint = obj;
+								this.EndPointO = UCvs.getById(obj.id + 1);
+								
+								this.EndPoint.type = UCanvas.RECT.FBOX;
+								this.EndPointO.type = UCanvas.RECT.SBOX;
 							}.bind(a_star);
 						UCvs.restore();
 					}
@@ -406,7 +437,7 @@ export class CanvasRender{
 				type: 'wrapper-vert',
 				child: [
 					this.ConfPatterns.ChangerFPS(),
-					this.ConfPatterns.SpeedMul(a_star),
+					this.ConfPatterns.SpeedMul(a_star, 99999),
 					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
 				],
 			},
@@ -582,7 +613,7 @@ export class CanvasRender{
 			
 			ret.setGridSize(20);
 			ret.setGridDraw(true);
-			ret.setGridColor('#555');
+			ret.setGridColor('#555555');
 			
 			ret.setBrushSelect('FSPoint');
 			ret.setBrushColor('#ffffff');
@@ -858,7 +889,7 @@ export class CanvasRender{
 			
 			ret.setGridSize(40);
 			ret.setGridDraw(true);
-			ret.setGridColor('#555');
+			ret.setGridColor('#555555');
 			
 			ret.setBrushSelect('FSPoint');
 			ret.setBrushColor('#ffffff');
@@ -1012,6 +1043,234 @@ export class CanvasRender{
 		
 		this.ondraw = updater;
 		this.AlgosState.Algo_Genetics = prevState;
+	}
+
+	super_genetics(){
+		let prevState = this.AlgosState.Algo_Super_Genetics ?? {};
+		
+		let cursorPos = { x: 0, y: 0 };
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setBrushSelect('Line');
+			ret.setBrushColor('#ab01b7');
+			ret.setBrushSize(15);
+			ret.setBrushWidth(3);
+			
+			return ret;
+		}).bind(this)();
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		let super_genetics = prevState.super_genetics = prevState.super_genetics ?? new Algo_Super_Genetics();
+		
+		let gap_code = 300;
+		let count_code = Math.floor(UCvs.width / gap_code);
+		let step_code = 1;
+		
+		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			function fillTextMultiLine(ctx, text, x, y){
+				let lineHeight = ctx.measureText('M').width * 2;
+				let lines = text.split('\n');
+				
+				for (let i = 0; i < lines.length; i++){
+					ctx.fillText(lines[i], x, y);
+					y += lineHeight;
+				}
+			}
+			
+			let pops = super_genetics.curr_out_population;
+			
+			if(pops){
+				ctxImage.save();
+					ctxImage.fillStyle = '#ff0000';
+					ctxImage.font = '3em monospace';
+					
+					for(let i = 0; i < count_code; i++){
+						if(!pops[i * step_code]) continue;
+						
+						ctxImage.fillText('{' + (i * step_code) + '} - [' + pops[i * step_code].fit + ']', 10 + i * gap_code, 20);
+					}
+					
+					ctxImage.fillStyle = '#ffffff';
+					ctxImage.font = '2.25em monospace';
+					
+					for(let i = 0; i < count_code; i++){
+						if(!pops[i * step_code]) continue;
+						// #if __DEV__
+							fillTextMultiLine(ctxImage, super_genetics.individ_code(pops[i * step_code]), 10 + i * gap_code, 50);
+						// #endif
+						
+						// #if !__DEV__
+							drawHighlight(ctxImage, {
+								language: 'js',
+								theme: 'dark',
+								code: super_genetics.individ_code(pops[i * step_code])
+							}, 10 + i * gap_code, 50);
+						// #endif
+					}
+				ctxImage.restore();
+			}
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+		}.bind(super_genetics, this);
+		
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
+			let { x, y } = cursorPos;
+			
+			UCvs.startUndo();
+			setCursorPos(...e);
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+		});
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			if(e.buttons !== 1){ UCvs.endUndo(); return; }
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); return; }
+		};
+		
+		Config.setCtx('super_genetics');
+		Config.add([
+			{
+				type: 'wrapper-vert',
+				child: [
+					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.SpeedMul(super_genetics),
+					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Brush',
+					},
+					{
+						type: 'horz',
+						radio: 'Brush',
+						on: { radio: { click: function(){ UCvs.setBrushSelect($(this).attr('data-type')); }, }, },
+						child: [
+							{
+								type: 'radio',
+								value: 'Brush',
+								'data-type': 'Line',
+								checked: true,
+							},
+							{
+								type: 'radio',
+								value: 'Erase',
+								'data-type': 'Erase',
+							},
+						]
+					},
+					{
+						type: 'color',
+						value: UCvs.brushColor,
+						
+						on: { input: function(){ UCvs.setBrushColor(this.value); }, },
+					},
+					{
+						type: 'range',
+						value: 'Size',
+						min: 1,
+						init: UCvs.brushSize,
+						max: 100,
+						on: { input: function(){ UCvs.setBrushSize(parseInt(this.value)); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					this.ConfPatterns.UCanvasGrid(UCvs),
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Algo Settings',
+					},
+					// {
+						// type: 'range',
+						// value: 'Generations',
+						// min: 1,
+						// init: super_genetics.iterateCount,
+						// max: 10000,
+						
+						// on: { input: function(e){ super_genetics.setIterateCount(parseInt(this.value)); } },
+					// },
+					{
+						type: 'range',
+						value: 'Code columns',
+						min: 1,
+						max: 100,
+						init: count_code,
+						
+						on: { input: function(e){ count_code = parseInt(this.value); } },
+					},
+					{
+						type: 'range',
+						value: 'Code columns step',
+						min: 1,
+						max: 100,
+						init: step_code,
+						
+						on: { input: function(e){ step_code = parseInt(this.value); } },
+					},
+					{
+						type: 'range',
+						value: 'Gap width code',
+						min: 1,
+						max: 1000,
+						init: gap_code,
+						
+						on: { input: function(e){ gap_code = parseInt(this.value); } },
+					},
+					{
+						type: 'button',
+						value: 'start',
+						
+						on: { click: function(){ super_genetics.start(); } },
+					},
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasUndoRedo(UCvs, () => { super_genetics.forceStop = true; }),
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasPinkClear(UCvs, () => { super_genetics.forceStop = true; }),
+				],
+			},
+		], 'main');
+		
+		let UCvsUpdater = UCvs.update();
+		let updater = prevState.updater = prevState.updater ?? super_genetics.update(UCvs, UCvsUpdater.next.bind(UCvsUpdater)) ;
+		
+		this.ondraw = updater.next.bind(updater);
+		this.AlgosState.Algo_Super_Genetics = prevState;
 	}
 
 	ant(){
@@ -1597,7 +1856,7 @@ export class CanvasRender{
 									$(this.ctx.canvas).on('Render:draw.conf.loadImage', (e) => {
 										let ctx = this.ctx;
 										
-										let wh = this.CalcAspect(NN, img.width, img.height, false, true);
+										let wh = this.CAsp(NN, img.width, img.height, false, true);
 										
 										let w = Math.floor(wh[0] / 2);
 										let h = Math.floor(wh[1] / 2);
@@ -1659,7 +1918,7 @@ export class CanvasRender{
 			
 			ret.setGridSize(40);
 			ret.setGridDraw(true);
-			ret.setGridColor('#555');
+			ret.setGridColor('#555555');
 			
 			ret.setBrushSelect('FSPoint');
 			ret.setBrushColor('#973f3f');
@@ -1813,6 +2072,17 @@ export class CanvasRender{
 				type: 'wrapper',
 				child: [
 					this.ConfPatterns.UCanvasUndoRedo(UCvs),
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					{
+						type: 'button',
+						value: 'Fill-All',
+						
+						on: { click: (e) => { UCvs.fillGrid(function(x, y){ UCvs.brush(x, y, null, null); }); } },
+					},
 				],
 			},
 			{
