@@ -575,7 +575,7 @@ export class Algo_a_star{
     
 	}
 
-	*_labirint_depth(){ //работает
+	*_labirint_depth(width, height){ //работает
 		let maze = [];
 		let unvisited = [];
 
