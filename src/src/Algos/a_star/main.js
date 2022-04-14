@@ -574,110 +574,80 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	_labirint_Xueta(){ //не работает
+	*_labirint_depth(width, height){ //работает
+		let maze = [];
 		let unvisited = [];
-		for (let i = 0; i < this.height; i++){
-			for (let j = 0; j < this.width; j++){
-				if (i % 2 !== 0 && j % 2 !== 0 && i < this.height - 1 && j < this.width - 1){
-					this.walls[j][i] = false;
-					unvisited.push(new Point(j, i));
+
+		for (let i = 0; i < height; i++){
+			maze[i]= [];
+			for (let j = 0; j < width; j++){
+				if (i % 2 === 1 && j % 2 === 1 && i > 0 && j > 0){
+					maze[i][j] = false;
+					yield {x: i, y: j, wall: false};
+					unvisited.push({x: i, y: j});
+
 				}
-				else{
-					this.walls[j][i] = true;
-				}
-			}
-
-			let start = new Point(1, 1);
-			let current_cell = start;
-			let neighbour_cell;
-			let stack = []; 
-
-			function getNeighbours(width, height, cell){
-				let x = cell.w;
-				let y = cell.h;
-
-				let up = new Point(x, y - 2);
-				let rt = new Point(x + 2, y);
-				let dw = new Point(x, y + 2);
-				let lt = new Point(x - 2, y);
-				let d = [dw, rt, up, lt];
-
-				let cells = [];
-
-				for (let i = 0; i < 4; i++){
-					if (d[i].w > 0 && d[i].w < width && d[i].h > 0 && d[i].h < height){
-						let flag = false;
-						for (let j of unvisited){
-							if (d[i].w === j.w || d[i].h === j.h){
-								flag = true;
-								break;
-							}
-						}
-
-						if (!flag){
-							cells.push(d[i]);
-						}
-					}
-				}
-
-				return cells;
-			}
-
-			while (unvisited.length > 0){
-				let neighbours = getNeighbours(this.width, this.height, current_cell, 2);
-				
-				if (neighbours.length != 0){
-					let rand_num = getRandomInt(0, neighbours.length - 1);
-					neighbour_cell = neighbours[rand_num];
-					
-					stack.push(current_cell);
-
-					let xDiff = neighbour_cell.w - current_cell.w;
-					let yDiff = neighbour_cell.h - current_cell.h;
-					
-					if (xDiff === 0){
-						if (yDiff < 0){
-							this.walls[neighbour_cell.w][current_cell.h - (Math.abs(yDiff) - 1)] = true;
-
-						}
-						else{
-							this.walls[neighbour_cell.w][yDiff - 1 + current_cell.h] = true;
-					
-						}	
-					}
-					if (yDiff === 0){
-						if (xDiff < 0){
-							this.walls[current_cell.w - (Math.abs(xDiff) - 1)][current_cell.h] = true;
-
-						}
-						else{
-							this.walls[xDiff - 1 + current_cell.w ][current_cell.h] = true;
-					
-						}	
-					}
-
-					current_cell = neighbour_cell;
-
-					for (let i of unvisited){
-						if (current_cell.w === i.w && current_cell.h === i.h){
-							unvisited.splice(i, 1);
-							break;
-						}
-					}
-				}
-
-				else if (stack.length > 0){
-					start = stack.pop();
-				}
-
-				else{
-					let index = getRandomInt(0, unvisited.length);
-					let current_cell = unvisited[index];
-					unvisited.splice(index, 1);
-				}
+				else
+					maze[i][j] = true;
+					yield {x: i, y: j, wall: true};
 			}
 		}
 
-		this.print_matrix(this.walls);
+		let stack = [];
+
+		function getNeighbours(current){
+			let North = {x: current.x - 2, y: current.y};
+			let North_wall = {x: current.x - 1, y: current.y}; 
+			let South = {x: current.x + 2, y: current.y};
+			let South_wall = {x: current.x + 1, y: current.y}
+			let West = {x: current.x, y: current.y - 2};
+			let West_wall = {x: current.x, y: current.y - 1};
+			let East = {x: current.x, y: current.y + 2};
+			let East_wall = {x: current.x, y: current.y + 1};
+			let dir = [North, South, West, East];
+			let walls = [North_wall, South_wall, West_wall, East_wall];
+			let neighbours = [];
+
+			for (let i = 0; i < dir.length; i++){
+				if (dir[i].x >= 0 && dir[i].y >= 0 && dir[i].x < height && dir[i].y < height){
+					for (let j = 0; j < unvisited.length; j++)
+						if (dir[i].x === unvisited[j].x && dir[i].y === unvisited[j].y)
+							neighbours.push({point: dir[i], wall: walls[i], idx_in_unvis: j});
+					}
+			}
+
+			return neighbours;
+		}
+
+		let index = getRandomInt(0, unvisited.length);
+		let curr = unvisited[index];
+		unvisited.splice(index, 1);
+
+		while (unvisited.length > 0){
+			let directions = getNeighbours(curr);
+			
+			if (directions.length > 0){
+				stack.push(curr);
+				let idx = getRandomInt(0, directions.length);
+				let neighbour = directions[idx].point;
+				let wall = directions[idx].wall;
+
+				maze[wall.x][wall.y] = false;
+				yield {x: i, y: j, wall: false};
+				curr = neighbour;
+
+				unvisited.splice(directions[idx].idx_in_unvis, 1);
+			}
+			else if (stack.length > 0){
+				curr = stack.pop();
+			}
+			else{
+				let index = getRandomInt(0, unvisited.length);
+				curr = unvisited[index];
+				unvisited.splice(index, 1);
+			}
+		}
+
+		return maze;
 	}
 }
