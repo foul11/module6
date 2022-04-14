@@ -200,6 +200,58 @@ export class Algo_NN{
 		return ret;
 	}
 	
+	_getAABBsLinear(img, thlds, sizeX, sizeY){
+		let visited = new Uint8ClampedArray(img.length);
+		let groups = [];
+		
+		function isNOutANVisitedPush(queue, x, y){
+			let i = y * sizeX + x;
+			
+			if(x >= 0 && y >= 0 && x < sizeX && y < sizeY && !visited[i] && img[i] > thlds)
+				queue.push(i);
+		}
+		
+		for(let i = 0; i < img.length; i++){
+			let ind = (i % sizeX) * sizeY + (Math.floor(i / sizeX));
+			
+			if(img[ind] > thlds && !visited[ind]){
+				let queue = [ind];
+				let currGroup = groups.length;
+				
+				groups[currGroup] = [
+					sizeX,
+					sizeY,
+					0,
+					0,
+				];
+				
+				while(queue.length){
+					let j = queue.pop();
+					
+					let x = j % sizeX;
+					let y = Math.floor(j / sizeX);
+					
+					visited[j] = currGroup + 1;
+					
+					isNOutANVisitedPush(queue, x + 1, y);
+					isNOutANVisitedPush(queue, x - 1, y);
+					isNOutANVisitedPush(queue, x, y + 1);
+					isNOutANVisitedPush(queue, x, y - 1);
+					
+					groups[currGroup][0] = Math.min(groups[currGroup][0], x);
+					groups[currGroup][2] = Math.max(groups[currGroup][2], x);
+					groups[currGroup][1] = Math.min(groups[currGroup][1], y);
+					groups[currGroup][3] = Math.max(groups[currGroup][3], y);
+				}
+			}
+		}
+		
+		if(!groups.length)
+			return false;
+		
+		return groups;
+	}
+	
 	_getAABBLinear(img, thlds, sizeX, sizeY){
 		let [mX, mY, MX, MY] = [sizeX, sizeY, 0, 0];
 		
@@ -262,6 +314,100 @@ export class Algo_NN{
 		}
 		
 		return ret;
+	}
+	
+	_adder(img, width, height, toX, toY){
+		let imgW = (width + toX * 2);
+		let imgH = (height + toY * 2);
+		
+		let ret = new Uint8ClampedArray(imgW * imgH);
+		
+		for(let i = 0; i < width; i++)
+			for(let j = 0; j < height; j++)
+				ret[(i + toX) + imgW * (j + toY)] = img[j * width + i];
+		
+		return ret;
+	}
+	
+	_boxer(img, width, height, toX, toY){
+		let imgW = (width + toX * 2);
+		let imgH = (height + toY * 2);
+		
+		let maxW = Math.max(imgW, imgH);
+		
+		let ret = new Uint8ClampedArray(maxW ** 2);
+		
+		let offX = Math.floor((maxW - width) / 2);
+		let offY = Math.floor((maxW - height) / 2);
+		
+		for(let i = 0; i < width; i++)
+			for(let j = 0; j < height; j++)
+				ret[(i + offX) + maxW * (j + offY)] = img[j * width + i];
+		
+		return [ret, maxW, maxW];
+	}
+	
+	_downScale(img, width, height, NSizeX, NSizeY){
+		let ret = new Uint8ClampedArray(NSizeX * NSizeY);
+		
+		let grW = Math.ceil(width / NSizeX);
+		let grH = Math.ceil(height / NSizeY);
+		
+		let offX = -Math.floor((width % NSizeX) / 2);
+		let offY = -Math.floor((height % NSizeY) / 2);
+		
+		for(let i = 0; i < NSizeX; i++){
+			for(let j = 0; j < NSizeY; j++){
+				let light = 0;
+				
+				for(let iw = 0; iw < grW; iw++){
+					for(let jh = 0; jh < grH; jh++){
+						if(i * grW + iw < height && j * grH + jh < width && i >= 0 && j >= 0)
+							light += img[(i * grW + iw + offX) * width + (j * grH + jh + offY)] ?? 0;
+					}
+				}
+				
+				ret[j * NSizeX + i] = (light / (grH * grW) * 2);
+			}
+		}
+		
+		return ret;
+	}
+	
+	_preProcessingBeta(img){
+		let gscaled = this._grayscaleToLinear(img.data);
+		let AABBs = this._getAABBsLinear(gscaled, 30, img.width, img.height);
+		
+		let ctx = this.offscreenBufferingNN;
+		let rctx = this.offscreenBufferingRescale;
+		
+		if(AABBs === false) return false;
+		
+		let proccessedDatas = [];
+		
+		for(let i = 0; i < AABBs.length; i++){
+			let AABB = AABBs[i];
+			
+			let rw = AABB[2] - AABB[0];
+			let rh = AABB[3] - AABB[1];
+			
+			let fixW = Math.max(AABB[2] - AABB[0], AABB[3] - AABB[1]);
+			
+			let grW = Math.ceil(fixW / ctx.canvas.width);
+			let grH = Math.ceil(fixW / ctx.canvas.height);
+			
+			let cut = this._cutImg(gscaled, ...AABB, img.width, img.height);
+			let boxed = this._boxer(cut, rw, rh, 40, 40);
+			let downed = this._downScale(...boxed, ctx.canvas.width, ctx.canvas.height);
+			
+			let imgData = new ImageData(this._LinearToRGBA(downed), ctx.canvas.width, ctx.canvas.height);
+			
+			imgData.AABB = AABB;
+			
+			proccessedDatas.push(imgData);
+		}
+		
+		return proccessedDatas;
 	}
 	
 	_preProcessing(img){

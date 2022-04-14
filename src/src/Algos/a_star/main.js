@@ -511,7 +511,7 @@ export class Algo_a_star{
 			for (let j = 0; j < width; j++)
 				maze[i][j] = true;
 		}
-			
+		
 
 		let edges = [];
 
@@ -539,9 +539,8 @@ export class Algo_a_star{
 			
 		let tree_id = [];
 
-		for (let i = 0; i < height*width; i++){
+		for (let i = 0; i < height*width; i++)
 			tree_id.push(i)
-		}
 
 		while (edges.length > 0){
 			let index = getRandomInt(0, edges.length)
@@ -550,17 +549,14 @@ export class Algo_a_star{
 			let c = edges[index].center;
 			let a_id = a.y * height + a.x;
 			let b_id = b.y * height + b.x;
-			let flag_a = a.x > 0 && a.y > 0 && a.x < height - 1 && a.y < width - 1;
-			let flag_b = b.x > 0 && b.y > 0 && b.x < height - 1 && b.y < width - 1;
-			let flag_c = c.x > 0 && c.y > 0 && c.x < height - 1 && c.y < width - 1;
 
 			if (tree_id[a_id] !== tree_id[b_id]){
-				maze[a.x ][a.y] = false;
-				yield {x: a.x, y: a.y, wall: false};
+				maze[a.x][a.y] = false;
+				yield {x: a.y, y: a.x, wall: false};
 				maze[b.x][b.y] = false;
-				yield {x: b.x, y: b.y, wall: false};
+				yield {x: b.y, y: b.x, wall: false};
 				maze[c.x][c.y] = false;
-				yield {x: c.x, y: c.y, wall: false};
+				yield {x: c.y, y: c.x, wall: false};
 
 				edges.splice(index, 1);
 
@@ -571,13 +567,11 @@ export class Algo_a_star{
 					if (tree_id[j] === old_id)
 						tree_id[j] = new_id;
 				}
-			}
-			else
+			}else
 				edges.splice(index, 1);
 		}
 
 		return maze;
-    
 	}
 
 	_labirint_Xueta(){ //не работает

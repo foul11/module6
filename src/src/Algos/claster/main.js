@@ -185,6 +185,8 @@ export class Algo_Claster {
 					count_comp=max_comp;
 				}
 				count_repeat++;
+				
+				// yield [];
 			}
 		}else{
 			checkPoints = this._searchComp(matrix_adjacency);
@@ -217,6 +219,8 @@ export class Algo_Claster {
 			matrix_adjacency[max_i][max_j] = 0;
 			matrix_adjacency[max_j][max_i] = 0;
 			count_repeat++;
+			
+			// yield [];
 		}
 		let checkPoints = this._searchComp(matrix_adjacency);
 		for(let i=0;i<checkPoints.length;i++){

@@ -5,8 +5,9 @@ import { Algo_Claster } from './Algos/claster/main.js';
 import { Config } from './Config.js';
 import { UCanvas } from './Algos/_helpers/UCanvas.js';
 import { Matrix } from './Algos/_helpers/Matrix.js';
-import { Algo_Genetics } from "./Algos/genetics/main";
-import { Algo_Super_Genetics } from "./Algos/super_genetics/main";
+import { Algo_Genetics } from "./Algos/genetics/main.js";
+import { Algo_Super_Genetics } from "./Algos/super_genetics/main.js";
+import { TreeImage } from "./Algos/_helpers/TreeImage.js";
 
 // #if !__DEV__
 	const { drawHighlightedCode: drawHighlight } = require('canvas-syntax-highlight');
@@ -226,6 +227,8 @@ export class CanvasRender{
 		$(window).on('resize', this.resize.bind(this));
 		
 		requestAnimationFrame(this.draw.bind(this));
+		
+		// this.draw();
 	}
 	
 	_resetEvent(){
@@ -624,6 +627,7 @@ export class CanvasRender{
 		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
+		let OnlyKMeanse = false;
 		let enableOutCircle = true;
 		let cupdater = [
 			null,
@@ -848,6 +852,13 @@ export class CanvasRender{
 						on: { click: (e) => { enableOutCircle = e.target.checked; StartClast(); } },
 					},
 					{
+						type: 'checkbox',
+						value: 'Only K-Meanse',
+						checked: false,
+						
+						on: { click: (e) => { enableOutCircle = e.target.checked; StartClast(); } },
+					},
+					{
 						type: 'button',
 						value: 'Fill-All',
 						
@@ -1066,6 +1077,8 @@ export class CanvasRender{
 		let gap_code = 300;
 		let count_code = Math.floor(UCvs.width / gap_code);
 		let step_code = 1;
+		let shiftX = 0;
+		let shiftY = 0;
 		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
@@ -1092,7 +1105,7 @@ export class CanvasRender{
 					for(let i = 0; i < count_code; i++){
 						if(!pops[i * step_code]) continue;
 						
-						ctxImage.fillText('{' + (i * step_code) + '} - [' + pops[i * step_code].fit + ']', 10 + i * gap_code, 20);
+						ctxImage.fillText('{' + (i * step_code) + '} - [' + pops[i * step_code].fit + ']', 10 + i * gap_code + shiftX, 20 + shiftY);
 					}
 					
 					ctxImage.fillStyle = '#ffffff';
@@ -1101,7 +1114,7 @@ export class CanvasRender{
 					for(let i = 0; i < count_code; i++){
 						if(!pops[i * step_code]) continue;
 						// #if __DEV__
-							fillTextMultiLine(ctxImage, super_genetics.individ_code(pops[i * step_code]), 10 + i * gap_code, 50);
+							fillTextMultiLine(ctxImage, super_genetics.individ_code(pops[i * step_code]), 10 + i * gap_code + shiftX, 50 + shiftY);
 						// #endif
 						
 						// #if !__DEV__
@@ -1109,7 +1122,7 @@ export class CanvasRender{
 								language: 'js',
 								theme: 'dark',
 								code: super_genetics.individ_code(pops[i * step_code])
-							}, 10 + i * gap_code, 50);
+							}, 10 + i * gap_code + shiftX, 50 + shiftY);
 						// #endif
 					}
 				ctxImage.restore();
@@ -1245,6 +1258,24 @@ export class CanvasRender{
 						on: { input: function(e){ gap_code = parseInt(this.value); } },
 					},
 					{
+						type: 'range',
+						value: 'ShiftX',
+						min: 0,
+						max: 1000,
+						init: shiftX,
+						
+						on: { input: function(e){ shiftX = parseInt(this.value); } },
+					},
+					{
+						type: 'range',
+						value: 'ShiftY',
+						min: 0,
+						max: 1000,
+						init: shiftY,
+						
+						on: { input: function(e){ shiftY = parseInt(this.value); } },
+					},
+					{
 						type: 'button',
 						value: 'start',
 						
@@ -1332,7 +1363,7 @@ export class CanvasRender{
 						type: 'range',
 						value: 'Speed multiplier',
 						step: 0.1,
-						min: 0.1,
+						min: -1,
 						max: 10,
 						init: 1,
 						on: {
@@ -1628,13 +1659,15 @@ export class CanvasRender{
 		let NN = prevState.NN = prevState.NN ?? new Algo_NN(400, 400 / (this.width / this.height));
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
+		let drawAABBbox = false;
+		
 		NN.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
-			
+			/*
 			let processed = NN._preProcessing(ctxImage.getImageData(0, 0, NN.width, NN.height));
 			
 			if(processed !== false){
@@ -1668,6 +1701,45 @@ export class CanvasRender{
 					ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
 				ctx.restore();
 			}
+			*/
+			
+			let processeds = NN._preProcessingBeta(ctxImage.getImageData(0, 0, NN.width, NN.height));
+			
+			if(processeds === false) return false;
+			
+			let recognize = 'NN_DATA: [';
+			
+			for(let i = 0; i < processeds.length; i++){
+				let AABB = processeds[i].AABB;
+				
+				if(drawAABBbox){
+					ctx.save();
+						ctx.strokeStyle = 'red';
+						ctx.beginPath();
+						ctx.moveTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
+						ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[1], false, true));
+						ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[3], false, true));
+						ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[3], false, true));
+						ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
+						ctx.stroke();
+					ctx.restore();
+				}
+				
+				recognize += NN.NN(NN._grayscaleToLinear(processeds[i].data));
+			}
+			
+			recognize += ']';
+			
+			ctx.save();
+				ctx.font = "2.5em monospace";
+				ctx.strokeStyle = 'black';
+				ctx.fillStyle = 'red';
+				ctx.textAlign = 'right';
+				ctx.textBaseline = 'bottom';
+				ctx.lineWidth = 8;
+				ctx.strokeText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+				ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+			ctx.restore();
 		}.bind(NN, this);
 		
 		let UpdateMode = 'realtime';
@@ -1809,6 +1881,12 @@ export class CanvasRender{
 						value: 'Update',
 						on: { click: (e) => prevState.updater.call(this), },
 					},
+					{
+						type: 'checkbox',
+						value: 'drawAABBbox',
+						checked: drawAABBbox,
+						on: { click: function(e){ drawAABBbox = this.checked; } }
+					}
 				],
 			},
 			{
@@ -1817,22 +1895,6 @@ export class CanvasRender{
 					this.ConfPatterns.UCanvasUndoRedo(NN, () => needUpdate()),
 				],
 			},
-			// {
-				// type: 'wrapper-vert',
-				// child: [
-					// {
-						// type: 'text',
-						// placeholder: 'GridSize',
-						// id: 'conf-gridsize',
-						// min: 0,
-					// },
-					// {
-						// type: 'button',
-						// value: 'Set',
-						// on: { click: () => null, },
-					// },
-				// ]
-			// },
 			{
 				type: 'wrapper',
 				child: [
@@ -1878,14 +1940,6 @@ export class CanvasRender{
 				type: 'wrapper',
 				child: [
 					this.ConfPatterns.UCanvasPinkClear(NN, () => needUpdate()),
-					// {
-						// type: 'button',
-						// class: 'col-HotPink',
-						// value: '!!!WARGING!!!_____Clear_____!!!WARGING!!!',
-						// on: {
-							// click: (e) => { NN.clear(); needUpdate(); },
-						// },
-					// },
 				],
 			},
 		], 'main');
@@ -1909,7 +1963,7 @@ export class CanvasRender{
 		this.AlgosState.Algo_NN = prevState;
 	}
 	
-	test_UCanvas(){
+	async test_UCanvas(){
 		let prevState = this.AlgosState.test_UCanvas ?? {};
 		
 		let cursorPos = { x: 0, y: 0 };
@@ -1929,12 +1983,108 @@ export class CanvasRender{
 		}).bind(this)();
 		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
 		
+		let img = await TreeImage([
+			{
+				value: 'da1',
+				child: [
+					{
+						value: 'da2',
+					},
+					{
+						value: 'da3',
+					},
+					{
+						value: 'da4',
+					},
+				],
+			},
+			{
+				value: 'da1',
+				child: [
+					{
+						value: 'da2',
+						child: [
+							{
+								value: 'da2',
+							child: [
+									{
+										value: 'da2',
+										child: [
+											{
+												value: 'da2',
+												child: [
+													{
+														value: 'da2',
+													},
+													{
+														value: 'da2',
+													},
+													{
+														value: 'da2',
+													},
+												],
+											},
+										],
+									},
+								],
+							},
+							{
+								value: 'da3',
+							},
+							{
+								value: 'da4',
+							},
+							{
+								value: 'da2',
+							},
+							{
+								value: 'da3',
+							},
+							{
+								value: 'da4',
+							},
+						],
+					},
+					{
+						value: 'da3',
+					},
+					{
+						value: 'da4',
+					},
+					{
+						value: 'da2',
+					},
+					{
+						value: 'da3',
+					},
+					{
+						value: 'da4',
+					},
+				],
+			},
+			{
+				value: 'da1',
+				child: [
+					{
+						value: 'da2',
+					},
+					{
+						value: 'da3',
+					},
+					{
+						value: 'da4',
+					},
+				],
+			},
+		]);
+		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
 			let ctxWidth = render.width;
 			let ctxHeight = render.height;
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+			ctx.drawImage(img, 0, 0, img.width * 2, img.height * 2, 0, 0, ctxWidth, ctxHeight);
 		}.bind(UCvs, this);
 		
 		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
@@ -2136,32 +2286,36 @@ export class CanvasRender{
 		ctx.restore();
 	}
 	
-	draw(now){
-		if(!this.lastPerfomans){ this.lastPerfomans = performance.now(); }
-		if(!this.lastTNow){ this.lastTNow = now; }
-		if(!this.lastFNow){ this.lastFNow = now; }
-		
-		let perf = performance.now();
-		
-		let deltaF = now - this.lastFNow;
-		let delay = (1000 / this.maxFPS);
-		
-		if(deltaF >= delay){
-			let deltaT = now - this.lastTNow;
+	async draw(now){
+		while(true){
+			now = await new Promise(requestAnimationFrame);
 			
-			this.lastFNow = now - (Math.min(deltaF, 1000) - delay);
-			this.lastTNow = now;
+			if(!this.lastPerfomans){ this.lastPerfomans = performance.now(); }
+			if(!this.lastTNow){ this.lastTNow = now; }
+			if(!this.lastFNow){ this.lastFNow = now; }
 			
-			if(this.ondraw instanceof Function)
-				this.ondraw.call(this, Math.min(deltaT, 100) * this.SpeedMultiplier);
+			let perf = performance.now();
 			
-			$(this.ctx.canvas).triggerHandler('Render:draw');
+			let deltaF = now - this.lastFNow;
+			let delay = (1000 / this.maxFPS);
 			
-			this._drawFps(perf - this.lastPerfomans, this.ctx);
-			this.lastPerfomans = perf;
+			if(deltaF >= delay){
+				let deltaT = now - this.lastTNow;
+				
+				this.lastFNow = now - (Math.min(deltaF, 1000) - delay);
+				this.lastTNow = now;
+				
+				if(this.ondraw instanceof Function)
+					await this.ondraw.call(this, Math.min(deltaT, 100) * this.SpeedMultiplier);
+				
+				$(this.ctx.canvas).triggerHandler('Render:draw');
+				
+				this._drawFps(perf - this.lastPerfomans, this.ctx);
+				this.lastPerfomans = perf;
+			}
+			
+			// requestAnimationFrame(this.draw.bind(this));
 		}
-		
-		requestAnimationFrame(this.draw.bind(this));
 	}
 	
 	resize(){
