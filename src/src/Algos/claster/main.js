@@ -77,7 +77,7 @@ export class Algo_Claster {
 			this.onend.call(this);
 	}
 
-	*k_means(input, count_claster) {//count_claster - количество кластеров
+	*k_means(input, count_claster) {//верхний левый
 		let centre_claster = [];
 		let points = input;
 
@@ -129,23 +129,61 @@ export class Algo_Claster {
 			}
 			yield points;
 		}
+		console.log("success k-means!");
 	}
 
-	*agglomerative(input, count_claster) {//необязательный
+	*agglomerative(input, count_claster) {//нижний левый
 		let points = input;
-		if(count_claster==undefined){
-			count_claster=3;
-		}
+		let centre_claster = [];
 
-		for(let i=0;i<points.length;i++){
-			//points[i].claster=Math.floor(Math.random() * (count_claster+1));
-			points[i].claster=1;
+		for (let i = 0; i < points.length; i++) {//изначально каждая точка - отдельный кластер
+			points[i].claster=i;
+			centre_claster[i] = {
+				x: points[i].x,
+				y: points[i].y,
+				min_x: points[i].x,
+				min_y: points[i].y,
+				max_x: points[i].x,
+				max_y: points[i].y,
+			}
 		}
+		let counter=centre_claster.length
+		while (counter>count_claster){
+			let min_dist=Infinity;
+			let i_centre1;
+			let i_centre2;
+			for(let i=0;i<centre_claster.length;i++){//поиск ближайших кластеров
+				for(let j=i+1;j<centre_claster.length;j++){
+					if(centre_claster[i]!=undefined && centre_claster[j]!=undefined){
+						if(this['_get_dist_' + this.dist_name](centre_claster[i], centre_claster[j]) < min_dist){
+							min_dist=this['_get_dist_' + this.dist_name](centre_claster[i], centre_claster[j]);
+							i_centre1=i;
+							i_centre2=j;
+						}
+					}
+				}
+			}
+			for(let i=0;i<points.length;i++){
+				if(points[i].claster==i_centre2){
+					points[i].claster=i_centre1;
+					if (points[i].x < centre_claster[i_centre1].min_x) centre_claster[i_centre1].min_x = points[i].x;
+					if (points[i].x > centre_claster[i_centre1].max_x) centre_claster[i_centre1].max_x = points[i].x;
+					if (points[i].y < centre_claster[i_centre1].min_y) centre_claster[i_centre1].min_y = points[i].y;
+					if (points[i].y > centre_claster[i_centre1].max_y) centre_claster[i_centre1].max_y = points[i].y;
+				}
+			}
+			centre_claster[i_centre1].x = Math.floor((centre_claster[i_centre1].min_x + centre_claster[i_centre1].max_x) / 2);
+			centre_claster[i_centre1].y = Math.floor((centre_claster[i_centre1].min_y + centre_claster[i_centre1].max_y) / 2);
 
-		return points;
+
+			centre_claster[i_centre2]=undefined;
+			counter--;
+			yield points;
+		}
+		console.log("success agglomerative!");
 	}
 
-	*connect_components(input, count_claster){
+	*connect_components(input, count_claster){//нижний правый
 		let points = input;
 		let matrix_adjacency=this._set_matrix_adjacency(points);
 		let checkPoints = [];
@@ -186,50 +224,64 @@ export class Algo_Claster {
 						}
 					}
 					count_comp=max_comp;
+					for(let i=0;i<checkPoints.length;i++){
+						points[i].claster=checkPoints[i];
+					}
+					yield points;
 				}
 				count_repeat++;
-				
-				// yield [];
+				//console.log(count_comp);
 			}
+			checkPoints = this._searchComp(matrix_adjacency);
+			for(let i=0;i<checkPoints.length;i++){
+				points[i].claster=checkPoints[i];
+			}
+			yield points;
 		}else{
 			checkPoints = this._searchComp(matrix_adjacency);
-
+			for(let i=0;i<checkPoints.length;i++){
+				points[i].claster=checkPoints[i];
+			}
+			yield points;
 		}
-		for(let i=0;i<checkPoints.length;i++){
-			points[i].claster=checkPoints[i];
-		}
-		return points;
+		console.log("success connect components!");
 	}
 
-	*min_cover_tree(input, count_claster){
+	*min_cover_tree(input, count_claster){//верхний правый
 		let points = input;
-		let matrix_adjacency=this._set_matrix_adjacency(points);
-		matrix_adjacency = this._search_tree(matrix_adjacency);
-		let count_repeat=1;
-		while (count_repeat<count_claster){
-			let max = 0;
-			let max_i = 0;
-			let max_j = 0;
-			for(let i=0;i<matrix_adjacency.length;i++){
-				for(let j=0;j<matrix_adjacency.length;j++){
-					if(matrix_adjacency[i][j]>max){
-						max=matrix_adjacency[i][j];
-						max_i=i;
-						max_j=j;
+		if(points.length>0){
+			let matrix_adjacency=this._set_matrix_adjacency(points);
+			matrix_adjacency = this._search_tree(matrix_adjacency);
+			let count_repeat=1;
+			while (count_repeat<count_claster){
+				let max = 0;
+				let max_i = 0;
+				let max_j = 0;
+				for(let i=0;i<matrix_adjacency.length;i++){
+					for(let j=0;j<matrix_adjacency.length;j++){
+						if(matrix_adjacency[i][j]>max){
+							max=matrix_adjacency[i][j];
+							max_i=i;
+							max_j=j;
+						}
 					}
 				}
+				matrix_adjacency[max_i][max_j] = 0;
+				matrix_adjacency[max_j][max_i] = 0;
+				count_repeat++;
+				let checkPoints = this._searchComp(matrix_adjacency);
+				for(let i=0;i<checkPoints.length;i++){
+					points[i].claster=checkPoints[i];
+				}
+				yield points;
 			}
-			matrix_adjacency[max_i][max_j] = 0;
-			matrix_adjacency[max_j][max_i] = 0;
-			count_repeat++;
-			
-			// yield [];
+			let checkPoints = this._searchComp(matrix_adjacency);
+			for(let i=0;i<checkPoints.length;i++){
+				points[i].claster=checkPoints[i];
+			}
 		}
-		let checkPoints = this._searchComp(matrix_adjacency);
-		for(let i=0;i<checkPoints.length;i++){
-			points[i].claster=checkPoints[i];
-		}
-		return points;
+		yield points;
+		console.log("success min cover tree!");
 	}
 	
 	changeDistFunc(name){
