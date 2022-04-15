@@ -235,6 +235,7 @@ export class Algo_a_star{
 		switch(name){
 			case 'prima': lab = this._labirint_Prima(width, height); break;
 			case 'kruskal': lab = this._labirint_Kruskal(width, height); break;
+			case 'depth': lab = this._labirint_depth(width, height); break;
 			default: throw Error('labirint name Error');
 		}
 		
@@ -503,7 +504,7 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	*_labirint_Kruskal(width, height, cut_edge = 0){ //вроде роботоет
+	*_labirint_Kruskal(width, height){
 		let maze = [];
 
 		for (let i = 0; i < height; i++){
@@ -512,7 +513,6 @@ export class Algo_a_star{
 				maze[i][j] = true;
 		}
 		
-
 		let edges = [];
 
 		function addnode_hor(x, y){
@@ -574,22 +574,20 @@ export class Algo_a_star{
 		return maze;
 	}
 
-	*_labirint_depth(width, height){ //работает
+	*_labirint_depth(width, height){
 		let maze = [];
 		let unvisited = [];
 
 		for (let i = 0; i < height; i++){
 			maze[i]= [];
+			
 			for (let j = 0; j < width; j++){
 				if (i % 2 === 1 && j % 2 === 1 && i > 0 && j > 0){
 					maze[i][j] = false;
-					yield {x: i, y: j, wall: false};
-					unvisited.push({x: i, y: j});
-
-				}
-				else
+					yield {x: j, y: i, wall: false};
+					unvisited.push({x: j, y: i});
+				}else
 					maze[i][j] = true;
-					yield {x: i, y: j, wall: true};
 			}
 		}
 
@@ -608,13 +606,11 @@ export class Algo_a_star{
 			let walls = [North_wall, South_wall, West_wall, East_wall];
 			let neighbours = [];
 
-			for (let i = 0; i < dir.length; i++){
-				if (dir[i].x >= 0 && dir[i].y >= 0 && dir[i].x < height && dir[i].y < height){
+			for (let i = 0; i < dir.length; i++)
+				if (dir[i].x >= 0 && dir[i].y >= 0 && dir[i].x < width && dir[i].y < height)
 					for (let j = 0; j < unvisited.length; j++)
 						if (dir[i].x === unvisited[j].x && dir[i].y === unvisited[j].y)
 							neighbours.push({point: dir[i], wall: walls[i], idx_in_unvis: j});
-					}
-			}
 
 			return neighbours;
 		}
@@ -632,16 +628,14 @@ export class Algo_a_star{
 				let neighbour = directions[idx].point;
 				let wall = directions[idx].wall;
 
-				maze[wall.x][wall.y] = false;
-				yield {x: i, y: j, wall: false};
+				maze[wall.y][wall.x] = false;
+				yield {x: wall.x, y: wall.y, wall: false};
 				curr = neighbour;
 
 				unvisited.splice(directions[idx].idx_in_unvis, 1);
-			}
-			else if (stack.length > 0){
+			}else if (stack.length > 0){
 				curr = stack.pop();
-			}
-			else{
+			}else{
 				let index = getRandomInt(0, unvisited.length);
 				curr = unvisited[index];
 				unvisited.splice(index, 1);

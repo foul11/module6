@@ -27,7 +27,6 @@
     "webpack-stream": "^6.1.2"
   },
   "dependencies": {
-    "canvas-syntax-highlight": "^1.0.1",
-    "webpack": "^5.50.0"
+    "canvas-syntax-highlight": "^1.0.1"
   }
 }

@@ -440,7 +440,7 @@ export class CanvasRender{
 				type: 'wrapper-vert',
 				child: [
 					this.ConfPatterns.ChangerFPS(),
-					this.ConfPatterns.SpeedMul(a_star, 99999),
+					this.ConfPatterns.SpeedMul(a_star),
 					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
 				],
 			},
@@ -576,8 +576,8 @@ export class CanvasRender{
 									},
 									{
 										type: 'radio',
-										value: 'X',
-										'data-type': 'x',
+										value: 'Depth',
+										'data-type': 'depth',
 									},
 								],
 							},
@@ -647,19 +647,27 @@ export class CanvasRender{
 			
 			let methods = ['k_means', 'agglomerative', 'connect_components', 'min_cover_tree'];
 			
-			for(let i = 0; i < 4; i++){
-				let toPoint = [];
-				
-				for(let j = 0; j < points.length; j+=4)
-					toPoint.push(points[j + i]);
-				
-				Claster.changeClastMethod(methods[i]);
+			if(OnlyKMeanse){
+				Claster.changeClastMethod('k_means');
 				Claster.changeDistFunc(distF);
 				Claster.changeClastCount(clastC);
 				
-				cupdater[i] = Claster.update(toPoint, allDraws, 0 ,0, enableOutCircle);
-				cupdater[i].next();
-			}
+				cupdater[0] = Claster.update(points, allDraws, 0 ,0, enableOutCircle);
+				cupdater[0].next();
+			}else
+				for(let i = 0; i < 4; i++){
+					let toPoint = [];
+					
+					for(let j = 0; j < points.length; j+=4)
+						toPoint.push(points[j + i]);
+					
+					Claster.changeClastMethod(methods[i]);
+					Claster.changeDistFunc(distF);
+					Claster.changeClastCount(clastC);
+					
+					cupdater[i] = Claster.update(toPoint, allDraws, 0 ,0, enableOutCircle);
+					cupdater[i].next();
+				}
 		}.bind(this);
 		
 		UCvs.onpredraw = prevState.onpredraw = prevState.onpredraw ?? function(render, deltaT, ctxImage){
@@ -676,6 +684,11 @@ export class CanvasRender{
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
 		}.bind(UCvs, this);
+		
+		UCvs.onresize = prevState.onresize = prevState.onresize ?? function(width, height){
+			Claster.width = width;
+			Claster.height = height;
+		}.bind(UCvs);
 		
 		let callBrush = function(...arg){
 			let pi2 = Math.PI / 2;
@@ -854,9 +867,9 @@ export class CanvasRender{
 					{
 						type: 'checkbox',
 						value: 'Only K-Meanse',
-						checked: false,
+						checked: OnlyKMeanse,
 						
-						on: { click: (e) => { enableOutCircle = e.target.checked; StartClast(); } },
+						on: { click: (e) => { OnlyKMeanse = e.target.checked; StartClast(); } },
 					},
 					{
 						type: 'button',
@@ -1707,7 +1720,8 @@ export class CanvasRender{
 			
 			if(processeds === false) return false;
 			
-			let recognize = 'NN_DATA: [';
+			// let recognize = 'NN_DATA: [';
+			let recognize = '';
 			
 			for(let i = 0; i < processeds.length; i++){
 				let AABB = processeds[i].AABB;
@@ -1728,17 +1742,40 @@ export class CanvasRender{
 				recognize += NN.NN(NN._grayscaleToLinear(processeds[i].data));
 			}
 			
-			recognize += ']';
+			let rationW = ctxWidth / 1200;
+			let rationH = ctxHeight / 1200;
+			
+			let scale = Math.min(rationW, rationH);
+			
+			let TyanIW = 300 * 0.75 * scale;
+			let TyanIH = 300 * scale;
+			
+			let CloudIW = 150 * 1.38 * scale * Math.max(recognize.length / 5, 1);
+			let CloudIH = 150 * scale;
+			
+			if(this.tyan.isLoad && this.cloud.isLoad){
+				ctx.save();
+					ctx.drawImage(this.tyan, ctxWidth - TyanIW, ctxHeight - TyanIH, TyanIW, TyanIH);
+					ctx.drawImage(this.cloud, ctxWidth - CloudIW - TyanIW + 25 * scale, ctxHeight - CloudIH - TyanIH + 100 * scale, CloudIW, CloudIH);
+				ctx.restore();
+			}
+			
+			let TextIW = ctxWidth - CloudIW / 2 - TyanIW + 25 * scale;
+			let TextIH = ctxHeight - CloudIH / 2 - TyanIH + 125 * scale;
+			
+			// recognize += ']';
 			
 			ctx.save();
-				ctx.font = "2.5em monospace";
+				ctx.font = (5 * scale) + "em monospace";
 				ctx.strokeStyle = 'black';
-				ctx.fillStyle = 'red';
-				ctx.textAlign = 'right';
+				ctx.fillStyle = 'HotPink';
+				ctx.textAlign = 'center';
 				ctx.textBaseline = 'bottom';
 				ctx.lineWidth = 8;
-				ctx.strokeText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
-				ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+				// ctx.strokeText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+				// ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
+				ctx.strokeText(recognize, TextIW, TextIH);
+				ctx.fillText(recognize, TextIW, TextIH);
 			ctx.restore();
 		}.bind(NN, this);
 		

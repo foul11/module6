@@ -51,6 +51,7 @@ export class UCanvas{
 		this.onclear = null;
 		this.onbrush = null;
 		this.ongridchange = null;
+		this.onresize = null;
 		
 		this.init(width, height);
 		this.saveStack = [];
@@ -826,6 +827,9 @@ export class UCanvas{
 		this.restore();
 		this.setGridSize(this.grid.x, this.grid.y);
 		this.saveStack = [];
+		
+		if(this.onresize instanceof Function)
+			this.onresize.call(this, width, height);
 	}
 	
 	clear(){

@@ -27,6 +27,9 @@ export class Algo_NN{
 		this._createCanvas('NN', 28, 28);
 		this._createCanvas('Rescale', 0, 0);
 		
+		this.tyan = this._createImage(resource.img15);
+		this.cloud = this._createImage(resource.img17);
+		
 		this.width = width;
 		this.height = height;
 		
@@ -34,6 +37,18 @@ export class Algo_NN{
 		this.currUndo = [];
 		this.currUndoI = 0;
 		this.MaxUndo = 100;
+	}
+	
+	_createImage(url){
+		let ret = new Image();
+		
+		ret.src = url;
+		ret.isLoad = false;
+		ret.onload = () => {
+			ret.isLoad = true;
+		};
+		
+		return ret;
 	}
 	
 	_createCanvas(pref, width, height, bg = null, lineRound = false){
@@ -84,8 +99,6 @@ export class Algo_NN{
 				for(let i in this.currUndo)
 					this._draw(ctx, this.currUndo[i]);
 			ctx.restore();
-			
-			// console.log(this._getAABBLinear(this._grayscaleToLinear(ctx.getImageData(0, 0, this.width, this.height).data), 100, this.width, this.height));
 			
 			if(this.ondraw instanceof Function)
 				this.ondraw.call(this, deltaT, ctx);
@@ -212,7 +225,7 @@ export class Algo_NN{
 		}
 		
 		for(let i = 0; i < img.length; i++){
-			let ind = (i % sizeX) * sizeY + (Math.floor(i / sizeX));
+			let ind = (i % sizeY) * sizeX + (Math.floor(i / sizeY));
 			
 			if(img[ind] > thlds && !visited[ind]){
 				let queue = [ind];
@@ -397,7 +410,7 @@ export class Algo_NN{
 			let grH = Math.ceil(fixW / ctx.canvas.height);
 			
 			let cut = this._cutImg(gscaled, ...AABB, img.width, img.height);
-			let boxed = this._boxer(cut, rw, rh, 40, 40);
+			let boxed = this._boxer(cut, rw, rh, Math.floor(40 * (rw / img.width)), Math.floor(40 * (rh / img.height)));
 			let downed = this._downScale(...boxed, ctx.canvas.width, ctx.canvas.height);
 			
 			let imgData = new ImageData(this._LinearToRGBA(downed), ctx.canvas.width, ctx.canvas.height);

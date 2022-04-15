@@ -65,6 +65,9 @@ export class Algo_Claster {
 				else
 					drawObj[point.id + 1].color = '#000000';
 			}
+			
+			if(rnext.done)
+				break;
 
 			if (this.ondraw instanceof Function)
 				this.ondraw.call(this, deltaT, ctx);

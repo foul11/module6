@@ -95,6 +95,30 @@ let tasks = {
 			// .pipe(gulp.dest('dist/'))
 	},
 	
+	bundlePacker(cb){
+		return gulp.src(['img/*', 'resource.js'])
+			.pipe(plumber())
+			.pipe(webpack({
+				mode: 'development',
+				experiments: {
+					asset: true,
+				},
+				output: {
+					filename: 'resource.js',
+				},
+				module: {
+					rules: [
+						{
+							test: /\.(png|svg|jpg|jpeg|gif)$/i,
+							type: 'asset/inline',
+						},
+					],
+				},
+			}, compiler))
+			.pipe(gulp.dest('../js/'))
+			.pipe(refresh())
+	},
+	
 	refresh(cb){
 		return gulp.src('../index.html')
 			.pipe(refresh())
@@ -103,6 +127,7 @@ let tasks = {
 	watch(cb){
 		refresh.listen();
 		
+		gulp.watch(['img/*', 'resource.js'], tasks.bundlePacker);
 		gulp.watch(['src/**/*.js', '!src/**/_ignore/**/*', 'config.js'], tasks.build);
 		gulp.watch(['src/less/**/*.less'], tasks.less);
 		gulp.watch(['../index.html'], tasks.refresh);
@@ -114,4 +139,5 @@ exports.default	= gulp.series(tasks.build, tasks.less);
 // exports.clean		= tasks.clean;
 exports.build		= tasks.build;
 exports.less		= tasks.less;
+exports.resource		= tasks.bundlePacker;
 exports.watch	= tasks.watch;
