@@ -134,7 +134,7 @@ let tasks = {
 	}
 }
 
-exports.default	= gulp.series(tasks.build, tasks.less);
+exports.default	= gulp.series(tasks.bundlePacker, tasks.build, tasks.less);
 
 // exports.clean		= tasks.clean;
 exports.build		= tasks.build;
