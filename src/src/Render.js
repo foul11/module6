@@ -7,6 +7,7 @@ import { UCanvas } from './Algos/_helpers/UCanvas.js';
 import { Matrix } from './Algos/_helpers/Matrix.js';
 import { Algo_Genetics } from "./Algos/genetics/main.js";
 import { Algo_Super_Genetics } from "./Algos/super_genetics/main.js";
+import { Algo_Tree_Solution } from "./Algos/tree_solution/main.js";
 import { TreeImage } from "./Algos/_helpers/TreeImage.js";
 
 // #if !__DEV__
@@ -1091,7 +1092,38 @@ export class CanvasRender{
 		let count_code = Math.floor(UCvs.width / gap_code);
 		let step_code = 1;
 		let shiftX = 0;
-		let shiftY = 0;
+		let shiftY = 20;
+		
+		let checkSelectBox = (pos) => {
+			let pops = super_genetics.curr_out_population;
+			
+			if(!pops) return [false];
+			
+			pos = this.CAsp(UCvs, pos);
+			let sel = Math.floor((pos[0] - shiftX) / gap_code);
+			
+			function char_count(str, chr){
+				let c = 0;
+				
+				for(let i = 0; i < str.length; i++)
+					if(str[i] === chr)
+						c++;
+					
+				return c;
+			}
+			
+			if(sel >= 0 && sel < count_code && pops[sel * step_code]){
+				let spaceCount = char_count(super_genetics.individ_code(pops[sel * step_code]), '\n');
+				let selY = (pos[1] - shiftY + 5);
+				
+				if(selY >= 0 && selY < spaceCount * 20 + 70){
+					
+					return [pops[sel * step_code], sel * gap_code + shiftX, shiftY - 5, gap_code, spaceCount * 20 + 70];
+				}
+			}
+			
+			return [false];
+		};
 		
 		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
 			let ctx = render.ctx;
@@ -1139,16 +1171,41 @@ export class CanvasRender{
 						// #endif
 					}
 				ctxImage.restore();
+				
+				let [sel, x, y, w, h] = checkSelectBox(cursorPos);
+				
+				if(sel !== false){
+					ctxImage.save();
+						ctxImage.strokeStyle = 'green';
+						ctxImage.lineWidth = 2;
+						
+						ctxImage.strokeRect(x, y, w, h);
+					ctxImage.restore();
+				}
 			}
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
 		}.bind(super_genetics, this);
 		
-		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((...e) => {
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((e) => {
 			let { x, y } = cursorPos;
 			
 			UCvs.startUndo();
-			setCursorPos(...e);
+			setCursorPos(e);
+			
+			let [sel] = checkSelectBox(cursorPos);
+			
+			if(sel !== false){
+				navigator.clipboard.writeText(
+`function fib(a){
+	${super_genetics.individ_code(sel).replaceAll(/yield\s*;\s*/g, '').replaceAll('\n', '\n\t')}
+	return b;
+}`
+				);
+				
+				$('#copy-tyan').css('transform', `translate(${e.pageX}px, ${e.pageY - 200}px)`);
+				$('#copy-tyan').stop(true, true).show(150).delay(400).hide(250);
+			}
 			
 			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
 		});
@@ -1680,41 +1737,6 @@ export class CanvasRender{
 			let ctxHeight = render.height;
 			
 			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
-			/*
-			let processed = NN._preProcessing(ctxImage.getImageData(0, 0, NN.width, NN.height));
-			
-			if(processed !== false){
-				let AABB = processed.AABB;
-				
-				ctx.save();
-					ctx.strokeStyle = 'red';
-					ctx.beginPath();
-					ctx.moveTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
-					ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[1], false, true));
-					ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[3], false, true));
-					ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[3], false, true));
-					ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
-					ctx.stroke();
-				ctx.restore();
-				
-				// ctx.save();
-					// ctx.drawImage(ctx.canvas, 0, 0, ctxWidth / 2, ctxHeight / 2, ctxWidth / 2, ctxHeight / 2 , ctxWidth / 8, ctxHeight / 8);
-				// ctx.restore();
-				
-				let recognize = 'NN_DATA: [' + NN.NN(NN._grayscaleToLinear(processed.data)) + ']';
-				
-				ctx.save();
-					ctx.font = "2.5em monospace";
-					ctx.strokeStyle = 'black';
-					ctx.fillStyle = 'red';
-					ctx.textAlign = 'right';
-					ctx.textBaseline = 'bottom';
-					ctx.lineWidth = 8;
-					ctx.strokeText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
-					ctx.fillText(recognize, ctx.canvas.width - 10, ctx.canvas.height - 10);
-				ctx.restore();
-			}
-			*/
 			
 			let processeds = NN._preProcessingBeta(ctxImage.getImageData(0, 0, NN.width, NN.height));
 			
@@ -1727,14 +1749,25 @@ export class CanvasRender{
 				let AABB = processeds[i].AABB;
 				
 				if(drawAABBbox){
+					let TextX = AABB[0] + (AABB[2] - AABB[0]) / 2 | 0;
+					let TextY = AABB[1];
+					
 					ctx.save();
+						ctx.font = "2em monospace";
+						ctx.strokeStyle = 'black';
+						ctx.fillStyle = 'red';
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'bottom';
+						ctx.strokeText(i.toString(), ...render.CAsp(NN, TextX, TextY, false, true));
+						ctx.fillText(i.toString(), ...render.CAsp(NN, TextX, TextY, false, true));
+					
 						ctx.strokeStyle = 'red';
 						ctx.beginPath();
-						ctx.moveTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
-						ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[1], false, true));
-						ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[3], false, true));
-						ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[3], false, true));
-						ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
+							ctx.moveTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
+							ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[1], false, true));
+							ctx.lineTo(...render.CAsp(NN, AABB[2], AABB[3], false, true));
+							ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[3], false, true));
+							ctx.lineTo(...render.CAsp(NN, AABB[0], AABB[1], false, true));
 						ctx.stroke();
 					ctx.restore();
 				}
@@ -1987,7 +2020,6 @@ export class CanvasRender{
 			// -Сделать несколько режимов обновления экрана нейросети (во время отпускания мышки, во время mousemove, и риалтайм)
 			// -загрузки изображения для распознования, сохранить изображение
 			
-			распознование нескольких цифр \
 			ЛГБТ Кисточка
 			
 			// Нейросеть конфигурация в пиксельный режим
@@ -1998,6 +2030,291 @@ export class CanvasRender{
 		
 		this.ondraw = updater;
 		this.AlgosState.Algo_NN = prevState;
+	}
+	
+	tree_solution(){
+		let prevState = this.AlgosState.Algo_Tree_Solution ?? {};
+		this._resetEvent();
+		
+		let cursorPos = { x: 0, y: 0 };
+		let UCvs = prevState.UCvs = prevState.UCvs ?? (function(){
+			let ret = new UCanvas(this.width, this.height);
+			
+			ret.setBrushSelect('Line');
+			ret.setBrushColor('#ab01b7');
+			ret.setBrushSize(15);
+			ret.setBrushWidth(3);
+			
+			return ret;
+		}).bind(this)();
+		
+		let setCursorPos = (e) => { cursorPos.x = e.offsetX; cursorPos.y = e.offsetY; };
+		
+		let tree = prevState.tree = prevState.tree ?? new Algo_Tree_Solution(this.width, this.height);
+		
+		// let tree = new Algo_Tree_Solution(
+			// [
+				// {person: 'Homer', hairLength: 0, weight: 250, age: 36, sex: 'male'},
+				// {person: 'Marge', hairLength: 10, weight: 150, age: 34, sex: 'female'},
+				// {person: 'Bart', hairLength: 2, weight: 90, age: 10, sex: 'male'},
+				// {person: 'Lisa', hairLength: 6, weight: 78, age: 8, sex: 'female'},
+				// {person: 'Maggie', hairLength: 4, weight: 20, age: 1, sex: 'female'},
+				// {person: 'Abe', hairLength: 1, weight: 170, age: 70, sex: 'male'},
+				// {person: 'Selma', hairLength: 8, weight: 160, age: 41, sex: 'female'},
+				// {person: 'Otto', hairLength: 10, weight: 180, age: 38, sex: 'male'},
+				// {person: 'Krusty', hairLength: 6, weight: 200, age: 45, sex: 'male'}
+				
+				/* Outlook,Temperature,Humidity,Wind,Play Tennis
+Sunny,Hot,High,Weak,No
+Sunny,Hot,High,Strong,No
+Overcast,Hot,High,Weak,Yes
+Rain,Mild,High,Weak,Yes
+Rain,Cool,Normal,Weak,Yes
+Rain,Cool,Normal,Strong,No
+Overcast,Cool,Normal,Strong,Yes
+Sunny,Mild,High,Weak,No
+Sunny,Cool,Normal,Weak,Yes
+Rain,Mild,Normal,Weak,Yes
+Sunny,Mild,Normal,Strong,Yes
+Overcast,Mild,High,Strong,Yes
+Overcast,Hot,Normal,Weak,Yes
+Rain,Mild,High,Strong,No */
+			// ],
+			// null,
+			// 'sex',
+		// );
+		
+		// console.log(tree.predict({person: 'Comic guy', hairLength: 8, weight: 290, age: 38}));
+		
+		UCvs.ondraw = prevState.ondraw = prevState.ondraw ?? function(render, deltaT, ctxImage){
+			let ctx = render.ctx;
+			let ctxWidth = render.width;
+			let ctxHeight = render.height;
+			
+			ctx.drawImage(ctxImage.canvas, 0, 0, ctxWidth, ctxHeight);
+		}.bind(tree, this);
+		
+		this.onmdown = prevState.onmdown = prevState.onmdown ?? ((e) => {
+			let { x, y } = cursorPos;
+			
+			UCvs.startUndo();
+			setCursorPos(e);
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+		});
+		this.onmenter = prevState.onmenter = prevState.onmenter ?? setCursorPos;
+		this.onmmove = prevState.onmmove = prevState.onmmove ?? function(e){
+			let { x, y } = cursorPos;
+			
+			setCursorPos(e);
+			
+			if(e.buttons !== 1){ UCvs.endUndo(); return; }
+			
+			UCvs.brush(...this.CAsp(UCvs, x, y), ...this.CAsp(UCvs, cursorPos));
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		this.onkeydown = prevState.onkeydown = prevState.onkeydown ?? function(e){
+			if(e.ctrlKey && e.keyCode == 90){ UCvs.undo(); return; }
+			if(e.ctrlKey && e.keyCode == 89){ UCvs.redo(); return; }
+		};
+		
+		Config.setCtx('tree_solution');
+		Config.add([
+			{
+				type: 'wrapper-vert',
+				child: [
+					this.ConfPatterns.ChangerFPS(),
+					this.ConfPatterns.ChangerSize(UCvs.resize.bind(UCvs)),
+				]
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Brush',
+					},
+					{
+						type: 'horz',
+						radio: 'Brush',
+						on: { radio: { click: function(){ UCvs.setBrushSelect($(this).attr('data-type')); }, }, },
+						child: [
+							{
+								type: 'radio',
+								value: 'Brush',
+								'data-type': 'Line',
+								checked: true,
+							},
+							{
+								type: 'radio',
+								value: 'Erase',
+								'data-type': 'Erase',
+							},
+						]
+					},
+					{
+						type: 'color',
+						value: UCvs.brushColor,
+						
+						on: { input: function(){ UCvs.setBrushColor(this.value); }, },
+					},
+					{
+						type: 'range',
+						value: 'Size',
+						min: 1,
+						init: UCvs.brushSize,
+						max: 100,
+						on: { input: function(){ UCvs.setBrushSize(parseInt(this.value)); }, },
+					},
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					this.ConfPatterns.UCanvasGrid(UCvs),
+				],
+			},
+			{
+				type: 'wrapper-vert',
+				child: [
+					{
+						type: 'string',
+						value: 'Algo Settings',
+					},
+					{
+						type: 'file',
+						value: 'File for Train',
+						
+						on: {
+							input: async function(e){
+								function readFile(file){
+									return new Promise((resolve, reject) => {
+										let fileread = new FileReader();  
+										fileread.onload = () => {
+											resolve(fileread.result);
+										};
+										fileread.onerror = reject;
+										fileread.readAsText(file);
+									});
+								}
+								
+								let data = await readFile(this.files[0]);
+								
+								let struct = null;
+								let treeData = [];
+								
+								for(let i of data.matchAll(/([^\n]+)\n/g)){
+									let cols = i[1].split(',');
+									
+									if(!struct){
+										struct = [];
+										
+										for(let j of cols)
+											struct.push(j);
+										
+										continue;
+									}
+									
+									let pushObj = {};
+									
+									for(let j = 0; j < cols.length; j++)
+										pushObj[struct[j]] = cols[j];
+									
+									treeData.push(pushObj);
+								}
+								
+								tree.gen_new(treeData, [], struct[struct.length - 1]);
+								
+								let treeDataImg = [];
+								
+								/*
+attribute: "Outlook"
+match:
+category: "Yes"
+[[Prototype]]: Object
+matchedCount: 4
+notMatch:
+attribute: "Temperature"
+match: {category: 'No'}
+matchedCount: 2
+notMatch:
+attribute: "Humidity"
+match: {attribute: 'Wind', predicateName: '==', pivot: 'Weak', match: {…}, predicate: ƒ, …}
+matchedCount: 5
+notMatch: {attribute: 'Outlook', predicateName: '==', pivot: 'Rain', match: {…}, predicate: ƒ, …}
+notMatchedCount: 2
+pivot: "Normal"
+predicate: ƒ (a, b)
+predicateName: "=="
+[[Prototype]]: Object
+notMatchedCount: 7
+pivot: "Hot"
+predicate: ƒ (a, b)
+predicateName: "=="
+[[Prototype]]: Object
+notMatchedCount: 9
+pivot: "Overcast"
+predicate: ƒ (a, b)
+predicateName: "=="
+
+								*/
+								
+								function genTreeDataImg(root, to = null){
+									if(to)
+										to = [];
+									
+									if(root.match instanceof Object){
+										// to.push({
+											// value: 
+										// })
+									}else
+										to.push({ value: root.match });
+									
+									if(root.notMatch instanceof Object){
+										
+									}else
+										to.push({ value: root.notMatch });
+									
+									return to;
+								}
+								
+								let img = await TreeImage([
+									
+								]);
+								
+								console.log(tree.root);
+							},
+						},
+					},
+					{
+						type: 'button',
+						value: 'start',
+						
+						on: { click: function(){ super_genetics.start(); } },
+					},
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasUndoRedo(UCvs, () => { super_genetics.forceStop = true; }),
+				],
+			},
+			{
+				type: 'wrapper',
+				child: [
+					this.ConfPatterns.UCanvasPinkClear(UCvs, () => { super_genetics.forceStop = true; }),
+				],
+			},
+		], 'main');
+		
+		let UCvsUpdater = UCvs.update();
+		let updater = prevState.updater = prevState.updater ?? tree.update(UCvs, UCvsUpdater.next.bind(UCvsUpdater)) ;
+		
+		this.ondraw = updater.next.bind(updater);
+		this.AlgosState.Algo_Tree_Solution = prevState;
 	}
 	
 	async test_UCanvas(){

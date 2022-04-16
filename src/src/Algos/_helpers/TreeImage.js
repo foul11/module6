@@ -145,7 +145,7 @@ export function TreeImage(TreeNode){
 	return new Promise((resolve) => {
 		let img = new Image();
 		let url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
-		debugger;
+		
 		img.src = url;
 		img.onload = function(){
 			URL.revokeObjectURL(url);
