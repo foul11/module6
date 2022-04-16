@@ -2265,7 +2265,7 @@ predicateName: "=="
 									if(to)
 										to = [];
 									
-									if(root.match instanceof Object){
+									if(root.match && root.match.attribute){
 										// to.push({
 											// value: 
 										// })

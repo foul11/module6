@@ -1,5 +1,5 @@
 module.exports = {
-	__DEV__: true,
+	__DEV__: false,
 	__NN_WEIGHT__: true,
 	
    "ifdef-verbose": true,                 // add this for verbose output
