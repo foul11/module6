@@ -43,5 +43,5 @@ $(function(){
 	// $('[data-algo="super_genetics"]').click();
 	// $('[data-algo="a_star"]').click();
 	// $('[data-algo="test_UCanvas"]').click();
-	$('[data-algo="tree_solution"]').click();
+	// $('[data-algo="tree_solution"]').click();
 });
