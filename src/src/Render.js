@@ -253,7 +253,9 @@ export class CanvasRender{
 		let imgHello = $('<img/>');
 		this.imgHello = imgHello;
 		
-		imgHello[0].src = 'img/5.png';
+		imgHello[0].src = 'img/18.svg';
+		imgHello[0].width = 100;
+		imgHello[0].height = 100;
 		
 		let helloDraw = function(render, a1, a2, a3){
 			let ctx = render.ctx;
@@ -2284,7 +2286,7 @@ predicateName: "=="
 									
 								]);
 								
-								console.log(tree.root);
+								console.log(tree);
 							},
 						},
 					},

@@ -27,7 +27,7 @@ export class Algo_NN{
 		this._createCanvas('NN', 28, 28);
 		this._createCanvas('Rescale', 0, 0);
 		
-		this.tyan = this._createImage(resource.img15);
+		this.tyan = this._createImage(resource.img21);
 		this.cloud = this._createImage(resource.img17);
 		
 		this.width = width;
